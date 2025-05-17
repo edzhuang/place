@@ -1,55 +1,48 @@
 "use client";
 
 import type React from "react";
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  DEFAULT_PIXEL_SIZE,
+  MIN_ZOOM,
+  MAX_ZOOM,
+} from "@/constants/canvas";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/Button";
 import { Slider } from "@/components/ui/Slider";
 import { ZoomIn, ZoomOut, Move } from "lucide-react";
-
-// Default canvas size
-const CANVAS_WIDTH = 100;
-const CANVAS_HEIGHT = 100;
-const DEFAULT_PIXEL_SIZE = 10;
-const MIN_ZOOM = 0.5;
-const MAX_ZOOM = 20;
-
-// Color palette
-const COLORS = [
-  "#FF4500", // Red
-  "#FFA800", // Orange
-  "#FFD635", // Yellow
-  "#00A368", // Green
-  "#7EED56", // Light Green
-  "#2450A4", // Blue
-  "#3690EA", // Light Blue
-  "#51E9F4", // Cyan
-  "#811E9F", // Purple
-  "#FF99AA", // Pink
-  "#9C6926", // Brown
-  "#000000", // Black
-  "#898D90", // Gray
-  "#D4D7D9", // Light Gray
-  "#FFFFFF", // White
-];
+import { Palette } from "@/components/Palette";
+import { useCanvas } from "@/contexts/CanvasContext"; // Import the context
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pixels, setPixels] = useState<string[][]>([]);
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-  const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  // Initialize the canvas with empty pixels
-  useEffect(() => {
-    const initialPixels = Array(CANVAS_HEIGHT)
-      .fill(null)
-      .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
-    setPixels(initialPixels);
-  }, []);
+  // Use context values
+  const {
+    pixels,
+    setPixels,
+    selectedColor,
+    setSelectedColor, // Make sure Palette uses this
+    zoom,
+    setZoom,
+    position,
+    setPosition,
+    isDragging,
+    setIsDragging,
+    dragStart,
+    setDragStart,
+  } = useCanvas();
+
+  // Initialize the canvas with empty pixels - This is now handled by the CanvasProvider in CanvasContext.tsx
+  // useEffect(() => {
+  //   const initialPixels = Array(CANVAS_HEIGHT)
+  //     .fill(null)
+  //     .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
+  //   setPixels(initialPixels);
+  // }, []); // Removed setPixels from dependency array as it's stable
 
   // Draw the canvas
   const drawCanvas = useCallback(() => {
@@ -137,19 +130,19 @@ export function Canvas() {
 
   // Handle canvas click to place a pixel
   const handleCanvasClick = (e: React.MouseEvent) => {
-    if (isDragging) return; // Don't place pixels while dragging
+    if (isDragging) return; // Don\\'t place pixels while dragging
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
 
     // Calculate the pixel coordinates based on zoom and position
     const pixelSize = DEFAULT_PIXEL_SIZE * zoom;
-    const pixelX = Math.floor((x - position.x) / pixelSize);
-    const pixelY = Math.floor((y - position.y) / pixelSize);
+    const pixelX = Math.floor((clickX - position.x) / pixelSize);
+    const pixelY = Math.floor((clickY - position.y) / pixelSize);
 
     // Check if the pixel is within bounds
     if (
@@ -160,9 +153,14 @@ export function Canvas() {
     ) {
       // Update the pixel
       setPixels((prevPixels) => {
-        const newPixels = [...prevPixels];
-        newPixels[pixelY] = [...newPixels[pixelY]];
-        newPixels[pixelY][pixelX] = selectedColor;
+        const newPixels = prevPixels.map((row, rIdx) => {
+          if (rIdx === pixelY) {
+            return row.map((col, cIdx) =>
+              cIdx === pixelX ? selectedColor : col
+            );
+          }
+          return row;
+        });
         return newPixels;
       });
     }
@@ -174,101 +172,69 @@ export function Canvas() {
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
 
-    // Calculate zoom center point (mouse position)
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    // Calculate new position to zoom toward mouse pointer
-    const newPosition = {
-      x: mouseX - (mouseX - position.x) * (newZoom / zoom),
-      y: mouseY - (mouseY - position.y) * (newZoom / zoom),
-    };
+    const newPositionX = mouseX - (mouseX - position.x) * (newZoom / zoom);
+    const newPositionY = mouseY - (mouseY - position.y) * (newZoom / zoom);
 
     setZoom(newZoom);
-    setPosition(newPosition);
+    setPosition({ x: newPositionX, y: newPositionY });
   };
 
   // Handle zoom buttons
   const handleZoomIn = () => {
     const newZoom = Math.min(MAX_ZOOM, zoom + 0.5);
+    // Adjust position to zoom towards center of canvas view if not mouse-based
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const newPositionX = centerX - (centerX - position.x) * (newZoom / zoom);
+    const newPositionY = centerY - (centerY - position.y) * (newZoom / zoom);
+
     setZoom(newZoom);
+    setPosition({ x: newPositionX, y: newPositionY });
   };
 
   const handleZoomOut = () => {
     const newZoom = Math.max(MIN_ZOOM, zoom - 0.5);
+    // Adjust position to zoom towards center of canvas view
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const newPositionX = centerX - (centerX - position.x) * (newZoom / zoom);
+    const newPositionY = centerY - (centerY - position.y) * (newZoom / zoom);
+
     setZoom(newZoom);
+    setPosition({ x: newPositionX, y: newPositionY });
   };
 
   // Reset view
   const handleResetView = () => {
     setZoom(1);
-    setPosition({ x: 0, y: 0 });
+    // Recenter based on initial canvas setup or a defined default
+    // For simplicity, resetting to 0,0 or center of initial pixel data
+    const initialX =
+      (containerRef.current?.clientWidth || 0) / 2 -
+      (CANVAS_WIDTH * DEFAULT_PIXEL_SIZE) / 2;
+    const initialY =
+      (containerRef.current?.clientHeight || 0) / 2 -
+      (CANVAS_HEIGHT * DEFAULT_PIXEL_SIZE) / 2;
+    setPosition({ x: initialX, y: initialY });
   };
 
   return (
     <div className="flex flex-col w-full h-full gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4 p-2 bg-gray-100 rounded-lg">
-        <div className="flex flex-wrap gap-1">
-          {COLORS.map((color) => (
-            <button
-              key={color}
-              className={`w-8 h-8 rounded-md border-2 ${
-                selectedColor === color
-                  ? "outline-2 outline-white border-black"
-                  : "border-transparent"
-              }`}
-              style={{ backgroundColor: color }}
-              onClick={() => setSelectedColor(color)}
-              aria-label={`Select color ${color}`}
-            />
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomOut}
-            disabled={zoom <= MIN_ZOOM}
-            aria-label="Zoom out"
-          >
-            <ZoomOut className="h-4 w-4" />
-          </Button>
-
-          <div className="w-32">
-            <Slider
-              value={[zoom]}
-              min={MIN_ZOOM}
-              max={MAX_ZOOM}
-              step={0.1}
-              onValueChange={(value) => setZoom(value[0])}
-              aria-label="Zoom level"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleZoomIn}
-            disabled={zoom >= MAX_ZOOM}
-            aria-label="Zoom in"
-          >
-            <ZoomIn className="h-4 w-4" />
-          </Button>
-
-          <Button variant="outline" size="sm" onClick={handleResetView}>
-            <Move className="h-4 w-4 mr-2" />
-            Reset View
-          </Button>
-        </div>
-      </div>
-
       <div
         ref={containerRef}
         className="relative flex-1 overflow-hidden border border-gray-300 rounded-lg bg-gray-50"
+        onMouseUp={handleMouseUp} // Moved from canvas to container to catch mouse up outside canvas
+        onMouseLeave={handleMouseLeave} // Moved from canvas to container
       >
         <canvas
           ref={canvasRef}
@@ -277,15 +243,68 @@ export function Canvas() {
           }`}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
+          // onMouseUp={handleMouseUp} // Moved to container
+          // onMouseLeave={handleMouseLeave} // Moved to container
           onClick={handleCanvasClick}
           onWheel={handleWheel}
         />
+      </div>
+      <div className="flex items-center justify-center gap-2 p-2 rounded-lg shadow">
+        <Palette
+          // Pass selectedColor and setSelectedColor from context
+          // Assuming PaletteProps are { selectedColor: string, setSelectedColor: (color: string) => void, colors: string[] }
+          // If Palette is also refactored to use useCanvas(), these props might not be needed.
+          // For now, we pass them.
+          selectedColor={selectedColor}
+          setSelectedColor={setSelectedColor}
+          // colors={COLORS} // COLORS would need to be imported or passed from context if Palette expects it
+        />
+        <Button
+          onClick={handleZoomIn}
+          aria-label="Zoom In"
+          variant="outline"
+          size="icon"
+        >
+          <ZoomIn className="w-5 h-5" />
+        </Button>
+        <Slider
+          value={[zoom]}
+          onValueChange={(value) => {
+            const newZoom = value[0];
+            // Adjust position to zoom towards center of canvas view
+            const canvas = canvasRef.current;
+            if (!canvas) return;
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            const newPositionX =
+              centerX - (centerX - position.x) * (newZoom / zoom);
+            const newPositionY =
+              centerY - (centerY - position.y) * (newZoom / zoom);
 
-        <div className="absolute bottom-2 right-2 bg-white bg-opacity-80 px-2 py-1 rounded text-xs">
-          Zoom: {zoom.toFixed(1)}x
-        </div>
+            setZoom(newZoom);
+            setPosition({ x: newPositionX, y: newPositionY });
+          }}
+          min={MIN_ZOOM}
+          max={MAX_ZOOM}
+          step={0.01}
+          className="w-32"
+          aria-label="Zoom slider"
+        />
+        <Button
+          onClick={handleZoomOut}
+          aria-label="Zoom Out"
+          variant="outline"
+          size="icon"
+        >
+          <ZoomOut className="w-5 h-5" />
+        </Button>
+        <Button
+          onClick={handleResetView}
+          aria-label="Reset View"
+          variant="outline"
+        >
+          <Move className="w-5 h-5 mr-2" /> Reset View
+        </Button>
       </div>
     </div>
   );
