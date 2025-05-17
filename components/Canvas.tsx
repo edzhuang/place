@@ -216,7 +216,9 @@ export function Canvas() {
             <button
               key={color}
               className={`w-8 h-8 rounded-md border-2 ${
-                selectedColor === color ? "border-black" : "border-transparent"
+                selectedColor === color
+                  ? "outline-2 outline-white border-black"
+                  : "border-transparent"
               }`}
               style={{ backgroundColor: color }}
               onClick={() => setSelectedColor(color)}
