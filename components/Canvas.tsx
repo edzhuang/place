@@ -15,6 +15,7 @@ const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null); // New ref for overlay canvas
   const pendingDragStartInfoRef = useRef<{
     clientX: number;
     clientY: number;
@@ -31,6 +32,7 @@ export function Canvas() {
     ArrowLeft: false,
     ArrowRight: false,
   });
+  const hoveredPixelRef = useRef<{ x: number; y: number } | null>(null); // To store hovered pixel coords
 
   // Use context values
   const {
@@ -86,10 +88,58 @@ export function Canvas() {
     }
   }, [pixels, zoom, position]);
 
+  // NEW: Draw the hover outline on the overlay canvas
+  const drawHoverOutline = useCallback(() => {
+    const overlay = overlayCanvasRef.current;
+    const ctx = overlay?.getContext("2d");
+    if (!overlay || !ctx) return;
+
+    // Clear overlay canvas
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+
+    if (
+      hoveredPixelRef.current &&
+      pixels.length > 0 &&
+      pixels[0] &&
+      pixels[0].length > 0
+    ) {
+      const { x: gridX, y: gridY } = hoveredPixelRef.current;
+
+      // Check if the hovered pixel is within bounds
+      if (
+        gridY >= 0 &&
+        gridY < pixels.length &&
+        gridX >= 0 &&
+        gridX < pixels[gridY].length
+      ) {
+        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+        const drawSize = Math.ceil(effectivePixelSize); // Use the same drawSize as main canvas for consistency
+
+        // Calculate the precise, potentially fractional, top-left corner of the pixel for outline
+        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+
+        // Draw a wider white outline first for contrast
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 2; // Adjust as needed
+        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+
+        // Draw a thinner black outline on top
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 1; // Adjust as needed
+        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+      }
+    }
+  }, [pixels, zoom, position]);
+
   // Update canvas when pixels, zoom, or position changes
   useEffect(() => {
     drawCanvas();
   }, [pixels, zoom, position, drawCanvas]);
+
+  useEffect(() => {
+    drawHoverOutline();
+  }, [zoom, position, drawHoverOutline]);
 
   // Effect for cleaning up animation frame on unmount
   useEffect(() => {
@@ -107,14 +157,21 @@ export function Canvas() {
       if (canvasRef.current) {
         canvasRef.current.width = window.innerWidth;
         canvasRef.current.height = window.innerHeight;
-        drawCanvas();
       }
+      if (overlayCanvasRef.current) {
+        // Resize overlay canvas
+        overlayCanvasRef.current.width = window.innerWidth;
+        overlayCanvasRef.current.height = window.innerHeight;
+      }
+      // Explicitly call draw functions after resize
+      drawCanvas();
+      drawHoverOutline();
     };
 
-    handleResize();
+    handleResize(); // Initial size
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [drawCanvas]);
+  }, [drawCanvas, drawHoverOutline]); // Add drawHoverOutline dependency
 
   // MODIFIED: Function to start and manage momentum scrolling animation (now handles keys too)
   const startMomentumScroll = useCallback(() => {
@@ -229,6 +286,12 @@ export function Canvas() {
 
   // MODIFIED: Handle mouse down for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
+    // Clear hover outline when any mouse button is pressed, as it usually indicates start of another action
+    if (hoveredPixelRef.current) {
+      hoveredPixelRef.current = null;
+      drawHoverOutline();
+    }
+
     if (e.button === 0) {
       // Left click
       // Stop any ongoing momentum animation (mouse or key)
@@ -255,6 +318,11 @@ export function Canvas() {
   const handleMouseMove = (e: React.MouseEvent) => {
     if (pendingDragStartInfoRef.current) {
       // Mouse has moved after mousedown, so start the drag
+      // Clear hover when drag starts
+      if (hoveredPixelRef.current) {
+        hoveredPixelRef.current = null;
+        drawHoverOutline();
+      }
       setIsDragging(true);
       const newDragStartX =
         pendingDragStartInfoRef.current.clientX - position.x;
@@ -274,6 +342,11 @@ export function Canvas() {
       pendingDragStartInfoRef.current = null; // Drag has started, clear the pending info
     } else if (isDragging) {
       // Drag was already in progress
+      // Clear hover if somehow active during drag (belt-and-suspenders)
+      if (hoveredPixelRef.current) {
+        hoveredPixelRef.current = null;
+        drawHoverOutline();
+      }
       if (lastMousePositionRef.current) {
         const deltaX = e.clientX - lastMousePositionRef.current.x;
         const deltaY = e.clientY - lastMousePositionRef.current.y;
@@ -285,6 +358,55 @@ export function Canvas() {
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       });
+    } else {
+      // Not dragging, handle hover
+      const canvas = canvasRef.current; // Use main canvas for coordinate calculations
+      const rect = canvas?.getBoundingClientRect();
+      // Ensure pixels array is valid before proceeding
+      if (
+        !rect ||
+        !pixels ||
+        pixels.length === 0 ||
+        !pixels[0] ||
+        pixels[0].length === 0
+      ) {
+        if (hoveredPixelRef.current) {
+          // If there was a hover, clear it
+          hoveredPixelRef.current = null;
+          drawHoverOutline();
+        }
+        return;
+      }
+
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+
+      // Calculate grid coordinates from mouse position
+      const gridX = Math.floor((mouseX - position.x) / effectivePixelSize);
+      const gridY = Math.floor((mouseY - position.y) / effectivePixelSize);
+
+      let newHoveredPixelTarget = null;
+      // Check if calculated grid coordinates are within the bounds of the pixels array
+      if (
+        gridY >= 0 &&
+        gridY < pixels.length &&
+        gridX >= 0 &&
+        gridX < pixels[gridY].length
+      ) {
+        newHoveredPixelTarget = { x: gridX, y: gridY };
+      }
+
+      // Update hover state and redraw outline only if the hovered pixel has changed
+      const currentHover = hoveredPixelRef.current;
+      if (
+        newHoveredPixelTarget?.x !== currentHover?.x ||
+        newHoveredPixelTarget?.y !== currentHover?.y
+      ) {
+        hoveredPixelRef.current = newHoveredPixelTarget;
+        drawHoverOutline();
+      }
     }
   };
 
@@ -317,10 +439,21 @@ export function Canvas() {
     }
     pendingDragStartInfoRef.current = null; // Clear pending drag info
     lastMousePositionRef.current = null; // Clear last mouse position
+
+    // Clear hover outline when mouse leaves the canvas
+    if (hoveredPixelRef.current) {
+      hoveredPixelRef.current = null;
+      drawHoverOutline();
+    }
   };
 
   // MODIFIED: Handle wheel event for zooming
   const handleWheel = (e: React.WheelEvent) => {
+    // Clear hover on wheel, as pixel under mouse changes or zoom invalidates current hover
+    if (hoveredPixelRef.current) {
+      hoveredPixelRef.current = null;
+      // drawHoverOutline() will be called by the effect triggered by setZoom/setPosition
+    }
     // Stop any ongoing momentum animation (mouse or key)
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -351,16 +484,25 @@ export function Canvas() {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`fixed inset-0 ${
-        isDragging ? "cursor-grabbing" : "cursor-crosshair"
-      }`}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onWheel={handleWheel}
-    />
+    <>
+      {" "}
+      {/* Use a fragment to return multiple sibling elements */}
+      <canvas
+        ref={canvasRef}
+        className={`fixed inset-0 ${
+          isDragging ? "cursor-grabbing" : "cursor-crosshair"
+        }`}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onWheel={handleWheel}
+      />
+      <canvas
+        ref={overlayCanvasRef}
+        className="fixed inset-0 pointer-events-none" // pointer-events-none so it doesn't block main canvas
+        // Width and height will be set dynamically in the resize effect
+      />
+    </>
   );
 }

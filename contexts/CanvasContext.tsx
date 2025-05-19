@@ -7,6 +7,10 @@ import { COLORS, CANVAS_WIDTH, CANVAS_HEIGHT } from "@/constants/canvas";
 interface CanvasContextState {
   pixels: string[][];
   setPixels: React.Dispatch<React.SetStateAction<string[][]>>;
+  selectedPixel: { x: number; y: number } | null;
+  setSelectedPixel: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number } | null>
+  >;
   selectedColor: string;
   setSelectedColor: React.Dispatch<React.SetStateAction<string>>;
   zoom: number;
@@ -27,6 +31,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       .fill(null)
       .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"))
   );
+  const [selectedPixel, setSelectedPixel] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -36,6 +44,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = {
     pixels,
     setPixels,
+    selectedPixel,
+    setSelectedPixel,
     selectedColor,
     setSelectedColor,
     zoom,
