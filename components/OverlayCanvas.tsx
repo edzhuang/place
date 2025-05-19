@@ -95,7 +95,7 @@ export function OverlayCanvas({
         gridX < pixels[gridY].length
       ) {
         const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-        const drawSize = Math.ceil(effectivePixelSize);
+        const drawSize = Math.round(effectivePixelSize);
 
         const outlineX = Math.round(gridX * effectivePixelSize + position.x);
         const outlineY = Math.round(gridY * effectivePixelSize + position.y);
