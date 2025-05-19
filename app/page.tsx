@@ -25,7 +25,7 @@ export default function HomePage() {
           <NavigationMenuList>
             <Link href="/">
               <Image
-                src="/light/wordmark.png"
+                src="/wordmark.svg"
                 width={772}
                 height={200}
                 alt="Picture of the author"
@@ -48,7 +48,7 @@ export default function HomePage() {
         </NavigationMenu>
       </div>
 
-      <main className="flex flex-col items-center justify-center w-screen h-screen bg-gray-200">
+      <main className="flex flex-col items-center justify-center w-screen h-screen bg-secondary">
         <Canvas />
       </main>
 
