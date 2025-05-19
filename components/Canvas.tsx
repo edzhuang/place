@@ -9,6 +9,9 @@ import { useCanvas } from "@/contexts/CanvasContext";
 // Constants for momentum
 const DAMPING_FACTOR = 0.92; // How quickly the momentum slows down (0 to 1)
 const MIN_VELOCITY_THRESHOLD = 0.1; // Below this speed, momentum stops
+// NEW: Constants for keyboard movement with momentum
+const KEY_ACCELERATION = 1; // How much velocity increases per frame when a key is held
+const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -21,6 +24,13 @@ export function Canvas() {
   const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null);
   const velocityRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
+  // NEW: Ref for tracking pressed keys
+  const keysPressedRef = useRef({
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+  });
 
   // Use context values
   const {
@@ -78,6 +88,7 @@ export function Canvas() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
+      // Ensure event listeners for keys are also cleaned up if added elsewhere directly
     };
   }, []);
 
@@ -96,7 +107,7 @@ export function Canvas() {
     return () => window.removeEventListener("resize", handleResize);
   }, [drawCanvas]);
 
-  // Function to start and manage momentum scrolling animation
+  // MODIFIED: Function to start and manage momentum scrolling animation (now handles keys too)
   const startMomentumScroll = useCallback(() => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -104,8 +115,35 @@ export function Canvas() {
 
     const animate = () => {
       let { x: velX, y: velY } = velocityRef.current;
+      let isActivelyKeyScrolling = false;
 
+      // Apply acceleration from keys if any are pressed
+      if (keysPressedRef.current.ArrowUp) {
+        velY = Math.max(velY + KEY_ACCELERATION, MAX_KEY_VELOCITY);
+        isActivelyKeyScrolling = true;
+      }
+      if (keysPressedRef.current.ArrowDown) {
+        velY = Math.min(velY - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
+        isActivelyKeyScrolling = true;
+      }
+      if (keysPressedRef.current.ArrowLeft) {
+        velX = Math.max(velX + KEY_ACCELERATION, MAX_KEY_VELOCITY);
+        isActivelyKeyScrolling = true;
+      }
+      if (keysPressedRef.current.ArrowRight) {
+        velX = Math.min(velX - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
+        isActivelyKeyScrolling = true;
+      }
+
+      // If not actively moving with keys, apply damping for momentum
+      if (!isActivelyKeyScrolling) {
+        velX *= DAMPING_FACTOR;
+        velY *= DAMPING_FACTOR;
+      }
+
+      // Stop animation if velocity is below threshold AND no keys are pressed
       if (
+        !isActivelyKeyScrolling &&
         Math.abs(velX) < MIN_VELOCITY_THRESHOLD &&
         Math.abs(velY) < MIN_VELOCITY_THRESHOLD
       ) {
@@ -122,26 +160,79 @@ export function Canvas() {
         y: prevPos.y + velY,
       }));
 
-      velX *= DAMPING_FACTOR;
-      velY *= DAMPING_FACTOR;
       velocityRef.current = { x: velX, y: velY };
-
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
     animationFrameRef.current = requestAnimationFrame(animate);
   }, [setPosition]);
 
-  // Handle mouse down for dragging
+  // NEW: useEffect for keyboard controls (keydown and keyup)
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        Object.prototype.hasOwnProperty.call(keysPressedRef.current, event.key)
+      ) {
+        keysPressedRef.current[
+          event.key as keyof typeof keysPressedRef.current
+        ] = true;
+
+        // If mouse momentum was active, stop it and let keys take over
+        if (animationFrameRef.current && !isAnyKeyPressed()) {
+          // This check ensures we don't needlessly stop/start if already key scrolling
+        }
+        // Ensure the animation loop is running if it's not already
+        if (!animationFrameRef.current) {
+          // Reset velocity if starting fresh with keys, to avoid using leftover mouse velocity
+          if (!isDragging && !pendingDragStartInfoRef.current) {
+            velocityRef.current = { x: 0, y: 0 };
+          }
+          startMomentumScroll();
+        }
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (
+        Object.prototype.hasOwnProperty.call(keysPressedRef.current, event.key)
+      ) {
+        keysPressedRef.current[
+          event.key as keyof typeof keysPressedRef.current
+        ] = false;
+        // The animation loop in startMomentumScroll will handle damping if no keys are pressed
+      }
+    };
+
+    const isAnyKeyPressed = () => {
+      return Object.values(keysPressedRef.current).some(
+        (isPressed) => isPressed
+      );
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [startMomentumScroll, isDragging]); // Added isDragging to re-evaluate if needed
+
+  // MODIFIED: Handle mouse down for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button === 0) {
       // Left click
-      // Stop any ongoing momentum animation
+      // Stop any ongoing momentum animation (mouse or key)
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
       }
       velocityRef.current = { x: 0, y: 0 }; // Reset velocity
+      // Reset key pressed states
+      Object.keys(keysPressedRef.current).forEach((key) => {
+        keysPressedRef.current[key as keyof typeof keysPressedRef.current] =
+          false;
+      });
 
       // Store initial mouse position but don't start dragging yet
       pendingDragStartInfoRef.current = {
@@ -219,14 +310,19 @@ export function Canvas() {
     lastMousePositionRef.current = null; // Clear last mouse position
   };
 
-  // Handle wheel event for zooming
+  // MODIFIED: Handle wheel event for zooming
   const handleWheel = (e: React.WheelEvent) => {
-    // Stop any ongoing momentum animation when zooming
+    // Stop any ongoing momentum animation (mouse or key)
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
       velocityRef.current = { x: 0, y: 0 };
     }
+    // Reset key pressed states
+    Object.keys(keysPressedRef.current).forEach((key) => {
+      keysPressedRef.current[key as keyof typeof keysPressedRef.current] =
+        false;
+    });
 
     e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
