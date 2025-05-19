@@ -31,6 +31,7 @@ export default function HomePage() {
                 height={200}
                 alt="Picture of the author"
                 className="w-auto h-6"
+                priority={true}
               />
             </Link>
           </NavigationMenuList>
@@ -50,7 +51,7 @@ export default function HomePage() {
         </NavigationMenu>
       </div>
 
-      <main className="flex flex-col items-center justify-center w-screen h-screen bg-secondary">
+      <main className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen bg-secondary">
         <Canvas />
       </main>
 

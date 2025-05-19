@@ -37,6 +37,14 @@ const CanvasContext = createContext<CanvasContextState | undefined>(undefined);
 // Define your database and table names
 const PIXELS_TABLE = "pixels"; // Replace with your actual table name
 
+// Define an interface for the structure of pixel data from Supabase
+interface SupabasePixel {
+  x: number;
+  y: number;
+  color: string;
+  // Add any other fields that might be part of your pixel data
+}
+
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const supabase = createClient(); // Initialize Supabase client
   const [pixels, setPixels] = useState<string[][]>([[]]);
@@ -61,7 +69,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) {
         console.error("Error fetching pixels:", error);
-        // Keep the default empty canvas or handle error appropriately
         setIsLoading(false);
         return;
       }
@@ -87,7 +94,120 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchInitialPixels();
-  }, [supabase]); // Re-run if supabase client instance changes, though unlikely
+
+    // Subscribe to real-time changes on the PIXELS_TABLE
+    const channel = supabase
+      .channel("realtime-pixels-updates") // Unique channel name
+      .on(
+        "postgres_changes",
+        {
+          event: "*", // Listen to all events (INSERT, UPDATE, DELETE)
+          schema: "public", // Or your specific schema if not public
+          table: PIXELS_TABLE,
+        },
+        (payload) => {
+          console.log("Realtime change received!", payload);
+          const { new: newRecord, old: oldRecord, eventType } = payload;
+
+          // Type guard to ensure the record is a SupabasePixel
+          const isSupabasePixel = (
+            record: unknown
+          ): record is SupabasePixel => {
+            return (
+              typeof record === "object" &&
+              record !== null &&
+              "x" in record &&
+              typeof (record as SupabasePixel).x === "number" &&
+              "y" in record &&
+              typeof (record as SupabasePixel).y === "number" &&
+              "color" in record &&
+              typeof (record as SupabasePixel).color === "string"
+            );
+          };
+
+          if (eventType === "INSERT" || eventType === "UPDATE") {
+            if (isSupabasePixel(newRecord)) {
+              setPixels((prevPixels) => {
+                if (
+                  !Array.isArray(prevPixels) ||
+                  !Array.isArray(prevPixels[0])
+                ) {
+                  console.warn(
+                    "prevPixels is not in the expected format, re-fetching might be needed or check initial state."
+                  );
+                  const initialSafePixels = Array(CANVAS_HEIGHT)
+                    .fill(null)
+                    .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
+                  if (
+                    newRecord.y >= 0 &&
+                    newRecord.y < CANVAS_HEIGHT &&
+                    newRecord.x >= 0 &&
+                    newRecord.x < CANVAS_WIDTH
+                  ) {
+                    initialSafePixels[newRecord.y][newRecord.x] =
+                      newRecord.color;
+                  }
+                  return initialSafePixels;
+                }
+
+                const updatedPixels = prevPixels.map((row) => [...row]);
+                if (
+                  newRecord.y >= 0 &&
+                  newRecord.y < CANVAS_HEIGHT &&
+                  newRecord.x >= 0 &&
+                  newRecord.x < CANVAS_WIDTH
+                ) {
+                  updatedPixels[newRecord.y][newRecord.x] = newRecord.color;
+                }
+                return updatedPixels;
+              });
+            }
+          } else if (eventType === "DELETE") {
+            if (isSupabasePixel(oldRecord)) {
+              setPixels((prevPixels) => {
+                if (
+                  !Array.isArray(prevPixels) ||
+                  !Array.isArray(prevPixels[0])
+                ) {
+                  console.warn(
+                    "prevPixels is not in the expected format for DELETE."
+                  );
+                  return Array(CANVAS_HEIGHT)
+                    .fill(null)
+                    .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
+                }
+                const updatedPixels = prevPixels.map((row) => [...row]);
+                if (
+                  oldRecord.y >= 0 &&
+                  oldRecord.y < CANVAS_HEIGHT &&
+                  oldRecord.x >= 0 &&
+                  oldRecord.x < CANVAS_WIDTH
+                ) {
+                  updatedPixels[oldRecord.y][oldRecord.x] = "#FFFFFF"; // Revert to default color
+                }
+                return updatedPixels;
+              });
+            }
+          }
+        }
+      )
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to realtime pixel changes!");
+        }
+        if (status === "CHANNEL_ERROR") {
+          console.error(`Failed to subscribe: ${err?.message}`);
+        }
+        if (status === "TIMED_OUT") {
+          console.error("Subscription timed out");
+        }
+      });
+
+    // Cleanup function to remove the channel subscription when the component unmounts
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase]); // Re-run if supabase client instance changes
 
   const placePixel = async () => {
     if (selectedPixel) {

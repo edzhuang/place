@@ -395,7 +395,6 @@ export function Canvas() {
         false;
     });
 
-    e.preventDefault();
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
 
