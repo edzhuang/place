@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { useCanvas } from "@/contexts/CanvasContext";
 
 export function Drawer() {
-  const { setSelectedPixel } = useCanvas();
+  const { setSelectedPixel, placePixel } = useCanvas();
 
   return (
     <div className="w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
@@ -18,7 +18,7 @@ export function Drawer() {
         >
           Cancel
         </Button>
-        <Button variant="primary" size="md">
+        <Button variant="primary" size="md" onClick={placePixel}>
           Place
         </Button>
       </div>

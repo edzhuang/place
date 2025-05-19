@@ -21,6 +21,7 @@ interface CanvasContextState {
   setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
   dragStart: { x: number; y: number };
   setDragStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
+  placePixel: () => void;
 }
 
 const CanvasContext = createContext<CanvasContextState | undefined>(undefined);
@@ -41,6 +42,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
+  const placePixel = () => {
+    if (selectedPixel) {
+      const newPixels = pixels.map((row, y) =>
+        row.map((pixelColor, x) => {
+          if (x === selectedPixel.x && y === selectedPixel.y) {
+            return selectedColor;
+          }
+          return pixelColor;
+        })
+      );
+      setPixels(newPixels);
+    }
+  };
+
   const contextValue = {
     pixels,
     setPixels,
@@ -56,6 +71,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setIsDragging,
     dragStart,
     setDragStart,
+    placePixel,
   };
 
   return (
