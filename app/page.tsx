@@ -1,12 +1,5 @@
 "use client";
 
-import {
-  NavigationMenu,
-  NavigationMenuList,
-} from "~/components/ui/NavigationMenu";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/Button";
 import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
@@ -15,47 +8,12 @@ import { useCanvas } from "@/contexts/CanvasContext";
 import clsx from "clsx";
 
 export default function HomePage() {
-  const router = useRouter();
   const { zoom, setZoom, selectedPixel } = useCanvas();
 
   return (
     <>
-      {/* Top UI */}
-      <div className="fixed top-0 inset-x-0 flex flex-col z-10">
-        <NavigationMenu>
-          <NavigationMenuList>
-            <Link href="/">
-              <Image
-                src="/wordmark.svg"
-                width={772}
-                height={200}
-                alt="Picture of the author"
-                className="w-auto h-6"
-                priority={true}
-              />
-            </Link>
-          </NavigationMenuList>
-          <NavigationMenuList className="pointer-events-none">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => router.push("/login")}
-              className="pointer-events-auto"
-            >
-              Log in
-            </Button>
-            <Button variant="primary" size="sm" className="pointer-events-auto">
-              Sign up
-            </Button>
-          </NavigationMenuList>
-        </NavigationMenu>
-      </div>
+      <Canvas />
 
-      <main className="fixed inset-0 flex flex-col items-center justify-center w-screen h-screen bg-secondary">
-        <Canvas />
-      </main>
-
-      {/* Bottom UI */}
       <div
         className={clsx(
           "fixed bottom-0 inset-x-0 flex flex-col z-10 pointer-events-none transition-transform duration-300 ease-in-out",
