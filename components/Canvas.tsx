@@ -37,6 +37,8 @@ export function Canvas() {
   // Use context values
   const {
     pixels,
+    selectedPixel, // Get selectedPixel from context
+    setSelectedPixel, // Get setSelectedPixel from context
     zoom,
     setZoom,
     position,
@@ -89,7 +91,7 @@ export function Canvas() {
   }, [pixels, zoom, position]);
 
   // NEW: Draw the hover outline on the overlay canvas
-  const drawHoverOutline = useCallback(() => {
+  const drawOverlayCanvas = useCallback(() => {
     const overlay = overlayCanvasRef.current;
     const ctx = overlay?.getContext("2d");
     if (!overlay || !ctx) return;
@@ -130,7 +132,35 @@ export function Canvas() {
         ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
       }
     }
-  }, [pixels, zoom, position]);
+
+    if (
+      selectedPixel &&
+      pixels.length > 0 &&
+      pixels[0] &&
+      pixels[0].length > 0
+    ) {
+      const { x: gridX, y: gridY } = selectedPixel;
+
+      // Check if the selected pixel is within bounds (it should be, if set correctly)
+      if (
+        gridY >= 0 &&
+        gridY < pixels.length &&
+        gridX >= 0 &&
+        gridX < pixels[gridY].length
+      ) {
+        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+        const drawSize = Math.ceil(effectivePixelSize);
+
+        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+
+        ctx.strokeStyle = "#00FFFF"; // Bright cyan for selected, adjust as needed
+        ctx.lineWidth = 2.5; // Make it slightly thicker than hover
+        // To make it more distinct, consider a dashed line or double outline later if needed
+        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+      }
+    }
+  }, [pixels, zoom, position, selectedPixel]);
 
   // Update canvas when pixels, zoom, or position changes
   useEffect(() => {
@@ -138,8 +168,8 @@ export function Canvas() {
   }, [pixels, zoom, position, drawCanvas]);
 
   useEffect(() => {
-    drawHoverOutline();
-  }, [zoom, position, drawHoverOutline]);
+    drawOverlayCanvas(); // Draw selected outline after hover (or manage clearing better)
+  }, [zoom, position, pixels, selectedPixel, drawOverlayCanvas]); // Added selectedPixel and pixels
 
   // Effect for cleaning up animation frame on unmount
   useEffect(() => {
@@ -165,13 +195,13 @@ export function Canvas() {
       }
       // Explicitly call draw functions after resize
       drawCanvas();
-      drawHoverOutline();
+      drawOverlayCanvas();
     };
 
     handleResize(); // Initial size
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [drawCanvas, drawHoverOutline]); // Add drawHoverOutline dependency
+  }, [drawCanvas, drawOverlayCanvas]); // Add drawSelectedOutline dependency
 
   // MODIFIED: Function to start and manage momentum scrolling animation (now handles keys too)
   const startMomentumScroll = useCallback(() => {
@@ -289,7 +319,6 @@ export function Canvas() {
     // Clear hover outline when any mouse button is pressed, as it usually indicates start of another action
     if (hoveredPixelRef.current) {
       hoveredPixelRef.current = null;
-      drawHoverOutline();
     }
 
     if (e.button === 0) {
@@ -321,7 +350,7 @@ export function Canvas() {
       // Clear hover when drag starts
       if (hoveredPixelRef.current) {
         hoveredPixelRef.current = null;
-        drawHoverOutline();
+        drawOverlayCanvas();
       }
       setIsDragging(true);
       const newDragStartX =
@@ -345,7 +374,7 @@ export function Canvas() {
       // Clear hover if somehow active during drag (belt-and-suspenders)
       if (hoveredPixelRef.current) {
         hoveredPixelRef.current = null;
-        drawHoverOutline();
+        drawOverlayCanvas();
       }
       if (lastMousePositionRef.current) {
         const deltaX = e.clientX - lastMousePositionRef.current.x;
@@ -373,7 +402,7 @@ export function Canvas() {
         if (hoveredPixelRef.current) {
           // If there was a hover, clear it
           hoveredPixelRef.current = null;
-          drawHoverOutline();
+          drawOverlayCanvas();
         }
         return;
       }
@@ -405,13 +434,14 @@ export function Canvas() {
         newHoveredPixelTarget?.y !== currentHover?.y
       ) {
         hoveredPixelRef.current = newHoveredPixelTarget;
-        drawHoverOutline();
+        drawOverlayCanvas();
       }
     }
   };
 
   // Handle mouse up to stop dragging
   const handleMouseUp = () => {
+    const wasDragging = isDragging;
     if (isDragging) {
       setIsDragging(false);
       if (
@@ -421,6 +451,41 @@ export function Canvas() {
         startMomentumScroll();
       }
     }
+    // If it wasn't a drag, and we had a pending drag start (meaning mouse down happened on canvas)
+    // then it's a click.
+    if (!wasDragging && pendingDragStartInfoRef.current) {
+      const canvas = canvasRef.current;
+      const rect = canvas?.getBoundingClientRect();
+      if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
+        const clickX = pendingDragStartInfoRef.current.clientX - rect.left;
+        const clickY = pendingDragStartInfoRef.current.clientY - rect.top;
+
+        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+        const gridX = Math.floor((clickX - position.x) / effectivePixelSize);
+        const gridY = Math.floor((clickY - position.y) / effectivePixelSize);
+
+        if (
+          gridY >= 0 &&
+          gridY < pixels.length &&
+          gridX >= 0 &&
+          gridX < pixels[gridY].length
+        ) {
+          // If clicking the same selected pixel, deselect it. Otherwise, select the new one.
+          if (
+            selectedPixel &&
+            selectedPixel.x === gridX &&
+            selectedPixel.y === gridY
+          ) {
+            setSelectedPixel(null); // Deselect
+          } else {
+            setSelectedPixel({ x: gridX, y: gridY }); // Select new
+          }
+        } else {
+          setSelectedPixel(null); // Clicked outside grid, deselect
+        }
+      }
+    }
+
     pendingDragStartInfoRef.current = null; // Clear pending drag info
     lastMousePositionRef.current = null; // Clear last mouse position
   };
@@ -443,7 +508,7 @@ export function Canvas() {
     // Clear hover outline when mouse leaves the canvas
     if (hoveredPixelRef.current) {
       hoveredPixelRef.current = null;
-      drawHoverOutline();
+      drawOverlayCanvas();
     }
   };
 
@@ -452,8 +517,8 @@ export function Canvas() {
     // Clear hover on wheel, as pixel under mouse changes or zoom invalidates current hover
     if (hoveredPixelRef.current) {
       hoveredPixelRef.current = null;
-      // drawHoverOutline() will be called by the effect triggered by setZoom/setPosition
     }
+
     // Stop any ongoing momentum animation (mouse or key)
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
