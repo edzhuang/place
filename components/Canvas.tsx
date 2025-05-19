@@ -381,6 +381,7 @@ export function Canvas() {
   // MODIFIED: Handle wheel event for zooming
   const handleWheel = (e: React.WheelEvent) => {
     setMouseEventArgsForHover(null); // Clear hover on wheel event
+    setIsDragging(false);
 
     // Stop any ongoing momentum animation (mouse or key)
     if (animationFrameRef.current) {
