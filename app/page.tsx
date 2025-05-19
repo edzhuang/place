@@ -9,15 +9,16 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/Button";
 import { Canvas } from "@/components/Canvas";
-import { CanvasProvider } from "@/contexts/CanvasContext";
 import { Drawer } from "@/components/Drawer";
 import { Plus, Minus } from "lucide-react";
+import { useCanvas } from "@/contexts/CanvasContext";
 
 export default function HomePage() {
   const router = useRouter();
+  const { zoom, setZoom } = useCanvas();
 
   return (
-    <CanvasProvider>
+    <>
       {/* Top UI */}
       <div className="fixed top-0 inset-x-0 flex flex-col z-10">
         <NavigationMenu>
@@ -55,16 +56,26 @@ export default function HomePage() {
       <div className="fixed bottom-0 inset-x-0 flex flex-col z-10">
         <div className="flex justify-end p-8">
           <div className="flex flex-col gap-2">
-            <Button variant="outline" size="md" subject="icon">
+            <Button
+              variant="outline"
+              size="md"
+              subject="icon"
+              onClick={() => setZoom(zoom + 0.1)}
+            >
               <Plus />
             </Button>
-            <Button variant="outline" size="md" subject="icon">
+            <Button
+              variant="outline"
+              size="md"
+              subject="icon"
+              onClick={() => setZoom(zoom - 0.1)}
+            >
               <Minus />
             </Button>
           </div>
         </div>
         <Drawer />
       </div>
-    </CanvasProvider>
+    </>
   );
 }
