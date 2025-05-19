@@ -15,7 +15,7 @@ function NavigationMenu({
   return (
     <NavigationMenuPrimitive.Root
       className={cn(
-        "fixed z-10 h-16 flex w-full flex-1 items-center justify-center border-b bg-background",
+        "fixed z-10 h-16 flex w-full flex-1 items-center justify-between border-b bg-background px-8",
         className
       )}
       {...props}

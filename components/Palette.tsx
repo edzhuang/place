@@ -1,21 +1,19 @@
 import { COLORS } from "@/constants/canvas";
+import { useCanvas } from "@/contexts/CanvasContext";
+import clsx from "clsx";
 
-interface PaletteProps {
-  selectedColor: string;
-  setSelectedColor: (color: string) => void;
-}
+export function Palette() {
+  // Use context values
+  const { selectedColor, setSelectedColor } = useCanvas();
 
-export function Palette({ selectedColor, setSelectedColor }: PaletteProps) {
   return (
     <div className="flex flex-wrap gap-1">
       {COLORS.map((color) => (
         <button
           key={color}
-          className={`w-8 h-8 rounded-md border-2 ${
-            selectedColor === color
-              ? "outline-2 outline-white border-black"
-              : "border-transparent"
-          }`}
+          className={clsx("w-8 h-8 rounded-md border", {
+            "outline outline-primary": selectedColor === color,
+          })}
           style={{ backgroundColor: color }}
           onClick={() => setSelectedColor(color)}
           aria-label={`Select color ${color}`}

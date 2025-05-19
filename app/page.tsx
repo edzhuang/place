@@ -10,46 +10,61 @@ import { useRouter } from "next/navigation";
 import { Button } from "~/components/ui/Button";
 import { Canvas } from "@/components/Canvas";
 import { CanvasProvider } from "@/contexts/CanvasContext";
+import { Drawer } from "@/components/Drawer";
+import { Plus, Minus } from "lucide-react";
 
 export default function HomePage() {
   const router = useRouter();
 
   return (
     <CanvasProvider>
-      <NavigationMenu>
-        <div className="flex items-center justify-between h-full w-full max-w-[1265px]">
+      {/* Top UI */}
+      <div className="fixed top-0 inset-x-0 flex flex-col z-10">
+        <NavigationMenu>
           <NavigationMenuList>
             <Link href="/">
               <Image
-                src="/light/wordmark.svg"
+                src="/light/wordmark.png"
                 width={772}
                 height={200}
                 alt="Picture of the author"
-                style={{
-                  width: "auto",
-                  height: "28px",
-                }}
+                className="w-auto h-6"
               />
             </Link>
           </NavigationMenuList>
           <NavigationMenuList>
             <Button
               variant="outline"
-              size="md"
+              size="sm"
               onClick={() => router.push("/login")}
             >
               Log in
             </Button>
-            <Button variant="primary" size="md">
+            <Button variant="primary" size="sm">
               Sign up
             </Button>
           </NavigationMenuList>
-        </div>
-      </NavigationMenu>
+        </NavigationMenu>
+      </div>
 
       <main className="flex flex-col items-center justify-center w-screen h-screen bg-gray-200">
         <Canvas />
       </main>
+
+      {/* Bottom UI */}
+      <div className="fixed bottom-0 inset-x-0 flex flex-col z-10">
+        <div className="flex justify-end p-8">
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" size="md" subject="icon">
+              <Plus />
+            </Button>
+            <Button variant="outline" size="md" subject="icon">
+              <Minus />
+            </Button>
+          </div>
+        </div>
+        <Drawer />
+      </div>
     </CanvasProvider>
   );
 }

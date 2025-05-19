@@ -4,7 +4,7 @@ import type React from "react";
 import { DEFAULT_PIXEL_SIZE, MIN_ZOOM, MAX_ZOOM } from "@/constants/canvas";
 
 import { useRef, useEffect, useCallback } from "react";
-import { useCanvas } from "@/contexts/CanvasContext"; // Import the context
+import { useCanvas } from "@/contexts/CanvasContext";
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
