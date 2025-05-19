@@ -54,24 +54,33 @@ export function Canvas() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Calculate pixel size based on zoom
-    const pixelSize = DEFAULT_PIXEL_SIZE * zoom;
+    // Calculate effective pixel size based on zoom (can be a float)
+    const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+
+    // Determine the size to draw each pixel (rounded up to prevent gaps)
+    const drawSize = Math.ceil(effectivePixelSize);
 
     // Draw pixels
     for (let y = 0; y < pixels.length; y++) {
       for (let x = 0; x < pixels[y].length; x++) {
-        const pixelX = x * pixelSize + position.x;
-        const pixelY = y * pixelSize + position.y;
+        // Calculate the precise, potentially fractional, top-left corner of the pixel
+        const currentPixelX = x * effectivePixelSize + position.x;
+        const currentPixelY = y * effectivePixelSize + position.y;
 
         // Only draw pixels that are visible in the viewport
+        // This check uses the precise coordinates and effective size
         if (
-          pixelX + pixelSize >= 0 &&
-          pixelX <= canvas.width &&
-          pixelY + pixelSize >= 0 &&
-          pixelY <= canvas.height
+          currentPixelX + effectivePixelSize >= 0 &&
+          currentPixelX <= canvas.width &&
+          currentPixelY + effectivePixelSize >= 0 &&
+          currentPixelY <= canvas.height
         ) {
+          // For actual drawing, round the coordinates to snap to the browser's pixel grid
+          const drawX = Math.round(currentPixelX);
+          const drawY = Math.round(currentPixelY);
+
           ctx.fillStyle = pixels[y][x];
-          ctx.fillRect(pixelX, pixelY, pixelSize, pixelSize);
+          ctx.fillRect(drawX, drawY, drawSize, drawSize);
         }
       }
     }
