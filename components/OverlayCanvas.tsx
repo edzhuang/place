@@ -100,11 +100,7 @@ export function OverlayCanvas({
         const outlineX = Math.round(gridX * effectivePixelSize + position.x);
         const outlineY = Math.round(gridY * effectivePixelSize + position.y);
 
-        ctx.strokeStyle = "white";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
-
-        ctx.strokeStyle = "black";
+        ctx.strokeStyle = "gray";
         ctx.lineWidth = 1;
         ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
       }
@@ -131,8 +127,8 @@ export function OverlayCanvas({
         const outlineX = Math.round(gridX * effectivePixelSize + position.x);
         const outlineY = Math.round(gridY * effectivePixelSize + position.y);
 
-        ctx.strokeStyle = "#00FFFF";
-        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
         ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
       }
     }
