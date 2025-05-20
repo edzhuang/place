@@ -30,12 +30,17 @@ export function Header() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/auth/login")}
           className="pointer-events-auto"
         >
           Log in
         </Button>
-        <Button variant="primary" size="sm" className="pointer-events-auto">
+        <Button
+          variant="primary"
+          size="sm"
+          className="pointer-events-auto"
+          onClick={() => router.push("/auth/sign-up")}
+        >
           Sign up
         </Button>
       </NavigationMenuList>

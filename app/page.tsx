@@ -5,6 +5,7 @@ import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
 import { Plus, Minus } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
+import { Header } from "@/components/Header";
 import clsx from "clsx";
 
 export default function HomePage() {
@@ -12,6 +13,8 @@ export default function HomePage() {
 
   return (
     <>
+      <Header />
+
       <Canvas />
 
       <div
