@@ -1,6 +1,6 @@
 import type { VariantProps } from "tailwind-variants";
 
-import { tv, cn } from "~/utils/tailwind";
+import { tv, cn } from "@/utils/tailwind";
 
 const inputVariants = tv({
   base: [

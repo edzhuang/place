@@ -2,7 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { extendTailwindMerge } from "tailwind-merge";
 import { createTV } from "tailwind-variants";
 
-import { BORDER_RADII, COLORS, FONT_SIZES } from "~/constants/tailwind";
+import { BORDER_RADII, COLORS, FONT_SIZES } from "@/constants/tailwind";
 
 const classGroups = {
   "font-size": FONT_SIZES.map((key) => `text-${key}`),

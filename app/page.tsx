@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "~/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
 import { Plus, Minus } from "lucide-react";

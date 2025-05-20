@@ -16,9 +16,11 @@ import { ThemeProvider } from "next-themes";
 import {
   NavigationMenu,
   NavigationMenuList,
-} from "~/components/ui/NavigationMenu";
+} from "@/components/ui/NavigationMenu";
 import Image from "next/image";
 import Link from "next/link";
+import { ReactScan } from "@/components/ReactScan";
+import React from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +49,7 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
+        <ReactScan />
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >

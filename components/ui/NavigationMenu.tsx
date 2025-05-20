@@ -3,9 +3,9 @@ import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu";
 import type { VariantProps } from "tailwind-variants";
 import { ChevronDownIcon } from "lucide-react";
 
-import { tv, cn } from "~/utils/tailwind";
+import { tv, cn } from "@/utils/tailwind";
 
-import _Link from "~/components/ui/_Link";
+import _Link from "@/components/ui/_Link";
 
 function NavigationMenu({
   className,

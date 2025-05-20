@@ -1,4 +1,4 @@
-import { cn, tv } from "~/utils/tailwind";
+import { cn, tv } from "@/utils/tailwind";
 
 const menuSubTriggerVariants = tv({
   base: [

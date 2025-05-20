@@ -1,4 +1,4 @@
-import { tv } from "~/utils/tailwind";
+import { tv } from "@/utils/tailwind";
 
 const dialogOverlayVariants = tv({
   base: [
