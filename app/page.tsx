@@ -11,12 +11,10 @@ import {
 } from "~/components/ui/NavigationMenu";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 import clsx from "clsx";
 
 export default function HomePage() {
-  const router = useRouter();
   const { zoom, setZoom, selectedPixel } = useCanvas();
 
   return (
@@ -35,20 +33,10 @@ export default function HomePage() {
           </Link>
         </NavigationMenuList>
         <NavigationMenuList className="pointer-events-none">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push("/auth/login")}
-            className="pointer-events-auto"
-          >
+          <Button variant="outline" size="sm" className="pointer-events-auto">
             Log in
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            className="pointer-events-auto"
-            onClick={() => router.push("/auth/sign-up")}
-          >
+          <Button variant="primary" size="sm" className="pointer-events-auto">
             Sign up
           </Button>
         </NavigationMenuList>
