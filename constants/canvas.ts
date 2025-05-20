@@ -5,6 +5,12 @@ export const DEFAULT_PIXEL_SIZE = 10;
 export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 20;
 
+// Constants for momentum
+export const DAMPING_FACTOR = 0.92; // How quickly the momentum slows down (0 to 1)
+export const MIN_VELOCITY_THRESHOLD = 0.1; // Below this speed, momentum stops
+export const KEY_ACCELERATION = 1; // How much velocity increases per frame when a key is held
+export const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
+
 // Color palette
 export const COLORS = [
   "#FF4500", // Red

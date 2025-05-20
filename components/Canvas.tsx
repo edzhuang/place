@@ -1,24 +1,21 @@
 "use client";
 
 import type React from "react";
-import { DEFAULT_PIXEL_SIZE, MIN_ZOOM, MAX_ZOOM } from "@/constants/canvas";
+import {
+  DEFAULT_PIXEL_SIZE,
+  MIN_ZOOM,
+  MAX_ZOOM,
+  DAMPING_FACTOR,
+  MIN_VELOCITY_THRESHOLD,
+  KEY_ACCELERATION,
+  MAX_KEY_VELOCITY,
+} from "@/constants/canvas";
 
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useCanvas } from "@/contexts/CanvasContext";
 
-// Constants for momentum
-const DAMPING_FACTOR = 0.92; // How quickly the momentum slows down (0 to 1)
-const MIN_VELOCITY_THRESHOLD = 0.1; // Below this speed, momentum stops
-// NEW: Constants for keyboard movement with momentum
-const KEY_ACCELERATION = 1; // How much velocity increases per frame when a key is held
-const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
-
 // Utility function to check if a pixel is within bounds
-const isPixelInBounds = (
-  gridX: number,
-  gridY: number,
-  pixels: string[][]
-) => {
+const isPixelInBounds = (gridX: number, gridY: number, pixels: string[][]) => {
   return (
     pixels.length > 0 &&
     pixels[0] &&
@@ -48,7 +45,6 @@ const calculateGridCoordinates = (
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  // REMOVED: const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const pendingDragStartInfoRef = useRef<{
     clientX: number;
     clientY: number;
@@ -58,7 +54,7 @@ export function Canvas() {
   const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null);
   const velocityRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
-  // NEW: Ref for tracking pressed keys
+  // Ref for tracking pressed keys
   const keysPressedRef = useRef({
     ArrowUp: false,
     ArrowDown: false,
@@ -87,6 +83,7 @@ export function Canvas() {
     setIsDragging,
     dragStart,
     setDragStart,
+    isLoading,
   } = useCanvas();
 
   // Utility function to stop animations and reset states
@@ -184,7 +181,10 @@ export function Canvas() {
     }
 
     // Draw hover outline (from OverlayCanvas)
-    if (hoveredPixel && isPixelInBounds(hoveredPixel.x, hoveredPixel.y, pixels)) {
+    if (
+      hoveredPixel &&
+      isPixelInBounds(hoveredPixel.x, hoveredPixel.y, pixels)
+    ) {
       const { x: gridX, y: gridY } = hoveredPixel;
 
       // No need for an additional check here as isPixelInBounds already covers it
@@ -199,7 +199,10 @@ export function Canvas() {
     }
 
     // Draw selected pixel outline (from OverlayCanvas)
-    if (selectedPixel && isPixelInBounds(selectedPixel.x, selectedPixel.y, pixels)) {
+    if (
+      selectedPixel &&
+      isPixelInBounds(selectedPixel.x, selectedPixel.y, pixels)
+    ) {
       const { x: gridX, y: gridY } = selectedPixel;
 
       // No need for an additional check here as isPixelInBounds already covers it
@@ -225,7 +228,6 @@ export function Canvas() {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      // Ensure event listeners for keys are also cleaned up if added elsewhere directly
     };
   }, []);
 
@@ -430,7 +432,8 @@ export function Canvas() {
     if (!wasDragging && pendingDragStartInfoRef.current) {
       const canvas = canvasRef.current;
       const rect = canvas?.getBoundingClientRect();
-      if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) { // Keep initial pixel data check
+      if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
+        // Keep initial pixel data check
         const { gridX, gridY } = calculateGridCoordinates(
           pendingDragStartInfoRef.current.clientX,
           pendingDragStartInfoRef.current.clientY,
@@ -502,17 +505,22 @@ export function Canvas() {
   };
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`fixed inset-0 ${
-        isDragging ? "cursor-grabbing" : "cursor-crosshair"
-      } pointer-events-auto`} // Ensure canvas receives pointer events
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
-      onWheel={handleWheel}
-      // Width and height are set dynamically by resize effect
-    />
+    <>
+      {isLoading && <p>Loading...</p>}
+
+      {!isLoading && (
+        <canvas
+          ref={canvasRef}
+          className={`fixed inset-0 ${
+            isDragging ? "cursor-grabbing" : "cursor-crosshair"
+          } pointer-events-auto`}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseLeave}
+          onWheel={handleWheel}
+        />
+      )}
+    </>
   );
 }

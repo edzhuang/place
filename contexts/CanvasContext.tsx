@@ -7,9 +7,11 @@ import {
   useState,
   ReactNode,
   useEffect,
+  useMemo,
 } from "react";
 import { COLORS, CANVAS_WIDTH, CANVAS_HEIGHT } from "@/constants/canvas";
-import { createClient } from "@/utils/supabase/client";
+import { useSession, useUser } from "@clerk/nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 interface CanvasContextState {
   pixels: string[][];
@@ -46,10 +48,27 @@ interface SupabasePixel {
 }
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
-  const supabase = createClient(); // Initialize Supabase client
+  const { isSignedIn } = useUser();
+  const { session } = useSession();
+
+  const client = useMemo(() => {
+    function createClerkSupabaseClient() {
+      return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+          async accessToken() {
+            return session?.getToken() ?? null;
+          },
+        }
+      );
+    }
+
+    return createClerkSupabaseClient();
+  }, [session]);
+
   const [pixels, setPixels] = useState<string[][]>([[]]);
   const [isLoading, setIsLoading] = useState(true);
-  // ...existing state declarations...
   const [selectedPixel, setSelectedPixel] = useState<{
     x: number;
     y: number;
@@ -63,7 +82,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchInitialPixels = async () => {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from(PIXELS_TABLE)
         .select("x, y, color");
 
@@ -94,9 +113,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     };
 
     fetchInitialPixels();
+  }, [client]);
+
+  useEffect(() => {
+    if (!isSignedIn) return;
 
     // Subscribe to real-time changes on the PIXELS_TABLE
-    const channel = supabase
+    const channel = client
       .channel("realtime-pixels-updates") // Unique channel name
       .on(
         "postgres_changes",
@@ -205,11 +228,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     // Cleanup function to remove the channel subscription when the component unmounts
     return () => {
-      supabase.removeChannel(channel);
+      client.removeChannel(channel);
     };
-  }, [supabase]); // Re-run if supabase client instance changes
+  }, [isSignedIn, client]);
 
   const placePixel = async () => {
+    if (!isSignedIn || isLoading) return;
+
     if (selectedPixel) {
       const newPixels = pixels.map((row, y) =>
         row.map((pixelColor, x) => {
@@ -222,7 +247,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setPixels(newPixels);
 
       // Update Supabase
-      const { error } = await supabase.from(PIXELS_TABLE).upsert(
+      const { error } = await client.from(PIXELS_TABLE).upsert(
         {
           x: selectedPixel.x,
           y: selectedPixel.y,
