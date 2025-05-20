@@ -5,12 +5,6 @@ import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
 import { Plus, Minus } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import {
-  NavigationMenu,
-  NavigationMenuList,
-} from "~/components/ui/NavigationMenu";
-import Image from "next/image";
-import Link from "next/link";
 
 import clsx from "clsx";
 
@@ -19,29 +13,6 @@ export default function HomePage() {
 
   return (
     <>
-      <NavigationMenu>
-        <NavigationMenuList>
-          <Link href="/">
-            <Image
-              src="/wordmark.svg"
-              width={772}
-              height={200}
-              alt="Picture of the author"
-              className="w-auto h-6"
-              priority={true}
-            />
-          </Link>
-        </NavigationMenuList>
-        <NavigationMenuList className="pointer-events-none">
-          <Button variant="outline" size="sm" className="pointer-events-auto">
-            Log in
-          </Button>
-          <Button variant="primary" size="sm" className="pointer-events-auto">
-            Sign up
-          </Button>
-        </NavigationMenuList>
-      </NavigationMenu>
-
       <Canvas />
 
       <div
