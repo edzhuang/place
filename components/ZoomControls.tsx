@@ -5,7 +5,7 @@ import { Plus, Minus } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
 
 export function ZoomControls() {
-  const { zoom, setZoom } = useCanvas();
+  const { adjustZoom } = useCanvas();
 
   return (
     <div className="flex flex-col gap-2">
@@ -13,7 +13,7 @@ export function ZoomControls() {
         variant="outline"
         size="md"
         subject="icon"
-        onClick={() => setZoom(zoom + 0.1)}
+        onClick={() => adjustZoom(1.1)}
         className="pointer-events-auto"
       >
         <Plus />
@@ -22,7 +22,7 @@ export function ZoomControls() {
         variant="outline"
         size="md"
         subject="icon"
-        onClick={() => setZoom(zoom - 0.1)}
+        onClick={() => adjustZoom(0.9)}
         className="pointer-events-auto"
       >
         <Minus />

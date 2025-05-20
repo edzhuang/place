@@ -2,7 +2,7 @@
 export const CANVAS_WIDTH = 100;
 export const CANVAS_HEIGHT = 100;
 export const DEFAULT_PIXEL_SIZE = 10;
-export const MIN_ZOOM = 0.1;
+export const MIN_ZOOM = 0.5;
 export const MAX_ZOOM = 20;
 
 // Constants for momentum

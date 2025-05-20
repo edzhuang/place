@@ -14,6 +14,8 @@ import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   DEFAULT_PIXEL_SIZE,
+  MAX_ZOOM,
+  MIN_ZOOM,
 } from "@/constants/canvas";
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
@@ -28,14 +30,14 @@ interface CanvasContextState {
   selectedColor: string;
   setSelectedColor: React.Dispatch<React.SetStateAction<string>>;
   zoom: number;
-  setZoom: React.Dispatch<React.SetStateAction<number>>;
+  adjustZoom: (multFactor: number, anchor?: { x: number; y: number }) => void;
   position: { x: number; y: number };
   setPosition: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
   isDragging: boolean;
   setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
   dragStart: { x: number; y: number };
   setDragStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
-  placePixel: () => Promise<void>; // Modified to be async
+  placePixel: () => Promise<void>;
   isLoading: boolean; // To indicate loading state
 }
 
@@ -250,6 +252,25 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [isSignedIn, client]);
 
+  const adjustZoom = (
+    multFactor: number,
+    anchor?: { x: number; y: number }
+  ) => {
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * multFactor));
+    setZoom(newZoom);
+
+    if (!anchor) {
+      anchor = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      };
+    }
+
+    const newPositionX = anchor.x - (anchor.x - position.x) * (newZoom / zoom);
+    const newPositionY = anchor.y - (anchor.y - position.y) * (newZoom / zoom);
+    setPosition({ x: newPositionX, y: newPositionY });
+  };
+
   const placePixel = async () => {
     if (!isSignedIn) {
       console.error("User must be signed in to place a pixel");
@@ -291,7 +312,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     selectedColor,
     setSelectedColor,
     zoom,
-    setZoom,
+    adjustZoom,
     position,
     setPosition,
     isDragging,

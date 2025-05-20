@@ -3,8 +3,6 @@
 import type React from "react";
 import {
   DEFAULT_PIXEL_SIZE,
-  MIN_ZOOM,
-  MAX_ZOOM,
   DAMPING_FACTOR,
   MIN_VELOCITY_THRESHOLD,
   KEY_ACCELERATION,
@@ -92,7 +90,7 @@ export function Canvas() {
     selectedPixel, // Get selectedPixel from context
     setSelectedPixel, // Get setSelectedPixel from context
     zoom,
-    setZoom,
+    adjustZoom,
     position,
     setPosition,
     isDragging,
@@ -577,8 +575,7 @@ export function Canvas() {
 
     stopAndResetAnimations(); // Use the utility function
 
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
+    const multFactor = e.deltaY > 0 ? 0.9 : 1.1;
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -586,11 +583,7 @@ export function Canvas() {
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const newPositionX = mouseX - (mouseX - position.x) * (newZoom / zoom);
-    const newPositionY = mouseY - (mouseY - position.y) * (newZoom / zoom);
-
-    setZoom(newZoom);
-    setPosition({ x: newPositionX, y: newPositionY });
+    adjustZoom(multFactor, { x: mouseX, y: mouseY });
   };
 
   return (
