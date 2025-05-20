@@ -9,7 +9,12 @@ import {
   useEffect,
   useMemo,
 } from "react";
-import { COLORS, CANVAS_WIDTH, CANVAS_HEIGHT } from "@/constants/canvas";
+import {
+  COLORS,
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  DEFAULT_PIXEL_SIZE,
+} from "@/constants/canvas";
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 
@@ -51,6 +56,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { isSignedIn } = useUser();
   const { session } = useSession();
 
+  const [pixels, setPixels] = useState<string[][]>([[]]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedPixel, setSelectedPixel] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  const [zoom, setZoom] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+
   const client = useMemo(() => {
     function createClerkSupabaseClient() {
       return createClient(
@@ -67,17 +84,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return createClerkSupabaseClient();
   }, [session]);
 
-  const [pixels, setPixels] = useState<string[][]>([[]]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedPixel, setSelectedPixel] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]);
-  const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+
+      const centeredX = (viewportWidth - DEFAULT_PIXEL_SIZE * CANVAS_WIDTH) / 2;
+      const centeredY =
+        (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
+
+      setPosition({ x: centeredX, y: centeredY });
+    }
+  }, [setPosition]);
 
   useEffect(() => {
     const fetchInitialPixels = async () => {
@@ -95,7 +113,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       if (data) {
         const newPixels = Array(CANVAS_HEIGHT)
           .fill(null)
-          .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF")); // Start with a white canvas
+          .map(() => Array(CANVAS_WIDTH).fill("#ffffff")); // Start with a white canvas
 
         data.forEach((pixel) => {
           if (
@@ -233,7 +251,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   }, [isSignedIn, client]);
 
   const placePixel = async () => {
-    if (!isSignedIn || isLoading) return;
+    if (!isSignedIn) {
+      console.error("User must be signed in to place a pixel");
+      return;
+    }
 
     if (selectedPixel) {
       const newPixels = pixels.map((row, y) =>

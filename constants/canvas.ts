@@ -1,8 +1,8 @@
 // Default canvas size
-export const CANVAS_WIDTH = 64;
-export const CANVAS_HEIGHT = 64;
+export const CANVAS_WIDTH = 100;
+export const CANVAS_HEIGHT = 100;
 export const DEFAULT_PIXEL_SIZE = 10;
-export const MIN_ZOOM = 0.5;
+export const MIN_ZOOM = 0.1;
 export const MAX_ZOOM = 20;
 
 // Constants for momentum
@@ -13,19 +13,19 @@ export const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
 
 // Color palette
 export const COLORS = [
-  "#FF4500", // Red
-  "#FFA800", // Orange
-  "#FFD635", // Yellow
-  "#00A368", // Green
-  "#7EED56", // Light Green
-  "#2450A4", // Blue
-  "#3690EA", // Light Blue
-  "#51E9F4", // Cyan
-  "#811E9F", // Purple
-  "#FF99AA", // Pink
-  "#9C6926", // Brown
+  "#ff4500", // Red
+  "#ffa800", // Orange
+  "#ffd635", // Yellow
+  "#00a368", // Green
+  "#7eed56", // Light Green
+  "#2450a4", // Blue
+  "#3690ea", // Light Blue
+  "#51e9f4", // Cyan
+  "#811e9f", // Purple
+  "#ff99aa", // Pink
+  "#9c6926", // Brown
   "#000000", // Black
-  "#898D90", // Gray
-  "#D4D7D9", // Light Gray
-  "#FFFFFF", // White
+  "#898d90", // Gray
+  "#d4d7d9", // Light Gray
+  "#ffffff", // White
 ];

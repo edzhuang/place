@@ -4,15 +4,19 @@ import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { ZoomControls } from "@/components/ZoomControls";
+import { LoaderCircle } from "lucide-react";
 
 import clsx from "clsx";
 
 export default function HomePage() {
-  const { selectedPixel } = useCanvas();
+  const { isLoading, selectedPixel } = useCanvas();
 
   return (
-    <>
-      <Canvas />
+    <div className="flex flex-col h-screen justify-center items-center">
+      {isLoading && (
+        <LoaderCircle className="h-12 w-12 animate-spin text-muted-foreground" />
+      )}
+      {!isLoading && <Canvas />}
 
       <div
         className={clsx(
@@ -27,6 +31,6 @@ export default function HomePage() {
           <Drawer />
         </div>
       </div>
-    </>
+    </div>
   );
 }

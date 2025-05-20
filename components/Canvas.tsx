@@ -10,9 +10,20 @@ import {
   KEY_ACCELERATION,
   MAX_KEY_VELOCITY,
 } from "@/constants/canvas";
-
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useCanvas } from "@/contexts/CanvasContext";
+
+// Utility function to parse hex color to RGB
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+};
 
 // Utility function to check if a pixel is within bounds
 const isPixelInBounds = (gridX: number, gridY: number, pixels: string[][]) => {
@@ -70,6 +81,11 @@ export function Canvas() {
     clientY: number;
   } | null>(null); // ADDED state for passing mouse events to OverlayCanvas
 
+  // Ref for the off-screen canvas used for rendering the pixel grid
+  const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // Ref for the requestAnimationFrame drawing loop
+  const animationFrameDrawRef = useRef<number | null>(null);
+
   // Use context values
   const {
     pixels,
@@ -83,7 +99,6 @@ export function Canvas() {
     setIsDragging,
     dragStart,
     setDragStart,
-    isLoading,
   } = useCanvas();
 
   // Utility function to stop animations and reset states
@@ -98,6 +113,66 @@ export function Canvas() {
         false;
     });
   }, []);
+
+  // Effect to update the off-screen canvas when pixel data changes
+  useEffect(() => {
+    if (
+      !pixels ||
+      pixels.length === 0 ||
+      !pixels[0] ||
+      pixels[0].length === 0
+    ) {
+      offscreenCanvasRef.current = null; // Clear if no pixels
+      // Trigger a redraw of the main canvas if it was cleared
+      if (canvasRef.current) {
+        const ctx = canvasRef.current.getContext("2d");
+        ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      return;
+    }
+
+    const gridWidth = pixels[0].length;
+    const gridHeight = pixels.length;
+
+    let canvas = offscreenCanvasRef.current;
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      offscreenCanvasRef.current = canvas;
+    }
+
+    if (canvas.width !== gridWidth || canvas.height !== gridHeight) {
+      canvas.width = gridWidth;
+      canvas.height = gridHeight;
+    }
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const imageData = ctx.createImageData(gridWidth, gridHeight);
+    const data = imageData.data;
+
+    for (let y = 0; y < gridHeight; y++) {
+      for (let x = 0; x < gridWidth; x++) {
+        const colorStr = pixels[y][x];
+        const index = (y * gridWidth + x) * 4;
+        if (colorStr) {
+          const rgb = hexToRgb(colorStr);
+          if (rgb) {
+            data[index] = rgb.r;
+            data[index + 1] = rgb.g;
+            data[index + 2] = rgb.b;
+            data[index + 3] = 255; // Alpha
+          } else {
+            data[index + 3] = 0; // Transparent for invalid hex
+          }
+        } else {
+          data[index + 3] = 0; // Transparent for missing color
+        }
+      }
+    }
+    ctx.putImageData(imageData, 0, 0);
+    // The main drawing useEffect will pick up this change via 'pixels' dependency and schedule a redraw.
+  }, [pixels]);
 
   // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)
   useEffect(() => {
@@ -154,30 +229,28 @@ export function Canvas() {
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw pixels (original logic)
-    if (pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
+    // Draw pixels from off-screen canvas
+    if (
+      offscreenCanvasRef.current &&
+      pixels.length > 0 &&
+      pixels[0] &&
+      pixels[0].length > 0
+    ) {
+      const offscreen = offscreenCanvasRef.current;
       const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-      const drawSize = Math.ceil(effectivePixelSize);
 
-      for (let y = 0; y < pixels.length; y++) {
-        for (let x = 0; x < pixels[y].length; x++) {
-          const currentPixelX = x * effectivePixelSize + position.x;
-          const currentPixelY = y * effectivePixelSize + position.y;
+      ctx.imageSmoothingEnabled = false;
+      // (ctx as any).mozImageSmoothingEnabled = false; // For Firefox if needed
+      // (ctx as any).webkitImageSmoothingEnabled = false; // For Webkit if needed
+      // (ctx as any).msImageSmoothingEnabled = false; // For IE/Edge if needed
 
-          if (
-            currentPixelX + effectivePixelSize >= 0 &&
-            currentPixelX <= canvas.width &&
-            currentPixelY + effectivePixelSize >= 0 &&
-            currentPixelY <= canvas.height
-          ) {
-            const drawX = Math.round(currentPixelX);
-            const drawY = Math.round(currentPixelY);
-
-            ctx.fillStyle = pixels[y][x];
-            ctx.fillRect(drawX, drawY, drawSize, drawSize);
-          }
-        }
-      }
+      ctx.drawImage(
+        offscreen,
+        position.x, // dx on main canvas
+        position.y, // dy on main canvas
+        offscreen.width * effectivePixelSize, // dWidth on main canvas
+        offscreen.height * effectivePixelSize // dHeight on main canvas
+      );
     }
 
     // Draw hover outline (from OverlayCanvas)
@@ -217,10 +290,26 @@ export function Canvas() {
     }
   }, [pixels, zoom, position, selectedPixel, hoveredPixel]); // ADDED selectedPixel, hoveredPixel
 
-  // Update canvas when relevant state changes
+  // Update canvas when relevant state changes, using requestAnimationFrame
   useEffect(() => {
-    drawCanvas();
-  }, [pixels, zoom, position, selectedPixel, hoveredPixel, drawCanvas]); // ADDED selectedPixel, hoveredPixel
+    const scheduleDraw = () => {
+      if (animationFrameDrawRef.current) {
+        cancelAnimationFrame(animationFrameDrawRef.current);
+      }
+      animationFrameDrawRef.current = requestAnimationFrame(() => {
+        drawCanvas();
+      });
+    };
+
+    scheduleDraw();
+
+    return () => {
+      if (animationFrameDrawRef.current) {
+        cancelAnimationFrame(animationFrameDrawRef.current);
+        animationFrameDrawRef.current = null;
+      }
+    };
+  }, [pixels, zoom, position, selectedPixel, hoveredPixel, drawCanvas]);
 
   // Effect for cleaning up animation frame on unmount
   useEffect(() => {
@@ -505,22 +594,16 @@ export function Canvas() {
   };
 
   return (
-    <>
-      {isLoading && <p>Loading...</p>}
-
-      {!isLoading && (
-        <canvas
-          ref={canvasRef}
-          className={`fixed inset-0 ${
-            isDragging ? "cursor-grabbing" : "cursor-crosshair"
-          } pointer-events-auto`}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          onWheel={handleWheel}
-        />
-      )}
-    </>
+    <canvas
+      ref={canvasRef}
+      className={`fixed inset-0 ${
+        isDragging ? "cursor-grabbing" : "cursor-crosshair"
+      } pointer-events-auto`}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onWheel={handleWheel}
+    />
   );
 }
