@@ -13,6 +13,39 @@ const MIN_VELOCITY_THRESHOLD = 0.1; // Below this speed, momentum stops
 const KEY_ACCELERATION = 1; // How much velocity increases per frame when a key is held
 const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
 
+// Utility function to check if a pixel is within bounds
+const isPixelInBounds = (
+  gridX: number,
+  gridY: number,
+  pixels: string[][]
+) => {
+  return (
+    pixels.length > 0 &&
+    pixels[0] &&
+    pixels[0].length > 0 &&
+    gridY >= 0 &&
+    gridY < pixels.length &&
+    gridX >= 0 &&
+    gridX < pixels[gridY].length
+  );
+};
+
+// Utility function to calculate grid coordinates from client coordinates
+const calculateGridCoordinates = (
+  clientX: number,
+  clientY: number,
+  rect: DOMRect,
+  position: { x: number; y: number },
+  zoom: number
+) => {
+  const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+  const clickX = clientX - rect.left;
+  const clickY = clientY - rect.top;
+  const gridX = Math.floor((clickX - position.x) / effectivePixelSize);
+  const gridY = Math.floor((clickY - position.y) / effectivePixelSize);
+  return { gridX, gridY };
+};
+
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   // REMOVED: const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -56,6 +89,19 @@ export function Canvas() {
     setDragStart,
   } = useCanvas();
 
+  // Utility function to stop animations and reset states
+  const stopAndResetAnimations = useCallback(() => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    velocityRef.current = { x: 0, y: 0 };
+    Object.keys(keysPressedRef.current).forEach((key) => {
+      keysPressedRef.current[key as keyof typeof keysPressedRef.current] =
+        false;
+    });
+  }, []);
+
   // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)
   useEffect(() => {
     if (!mouseEventArgsForHover) {
@@ -81,22 +127,16 @@ export function Canvas() {
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-    // Adjust clientX and clientY with rect.left and rect.top for accurate grid calculation relative to the canvas
-    const gridX = Math.floor(
-      (clientX - rect.left - position.x) / effectivePixelSize
-    );
-    const gridY = Math.floor(
-      (clientY - rect.top - position.y) / effectivePixelSize
+    const { gridX, gridY } = calculateGridCoordinates(
+      clientX,
+      clientY,
+      rect,
+      position,
+      zoom
     );
 
     let newHoveredPixelTarget = null;
-    if (
-      gridY >= 0 &&
-      gridY < pixels.length &&
-      gridX >= 0 &&
-      gridX < pixels[gridY].length
-    ) {
+    if (isPixelInBounds(gridX, gridY, pixels)) {
       newHoveredPixelTarget = { x: gridX, y: gridY };
     }
 
@@ -144,55 +184,33 @@ export function Canvas() {
     }
 
     // Draw hover outline (from OverlayCanvas)
-    if (
-      hoveredPixel &&
-      pixels.length > 0 &&
-      pixels[0] &&
-      pixels[0].length > 0
-    ) {
+    if (hoveredPixel && isPixelInBounds(hoveredPixel.x, hoveredPixel.y, pixels)) {
       const { x: gridX, y: gridY } = hoveredPixel;
 
-      if (
-        gridY >= 0 &&
-        gridY < pixels.length &&
-        gridX >= 0 &&
-        gridX < pixels[gridY].length
-      ) {
-        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-        const drawSize = Math.round(effectivePixelSize);
-        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
-        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+      // No need for an additional check here as isPixelInBounds already covers it
+      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+      const drawSize = Math.round(effectivePixelSize);
+      const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+      const outlineY = Math.round(gridY * effectivePixelSize + position.y);
 
-        ctx.strokeStyle = "gray";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
-      }
+      ctx.strokeStyle = "gray";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
     }
 
     // Draw selected pixel outline (from OverlayCanvas)
-    if (
-      selectedPixel &&
-      pixels.length > 0 &&
-      pixels[0] &&
-      pixels[0].length > 0
-    ) {
+    if (selectedPixel && isPixelInBounds(selectedPixel.x, selectedPixel.y, pixels)) {
       const { x: gridX, y: gridY } = selectedPixel;
 
-      if (
-        gridY >= 0 &&
-        gridY < pixels.length &&
-        gridX >= 0 &&
-        gridX < pixels[gridY].length
-      ) {
-        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-        const drawSize = Math.ceil(effectivePixelSize); // Use Math.ceil for selection for better visibility
-        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
-        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+      // No need for an additional check here as isPixelInBounds already covers it
+      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+      const drawSize = Math.ceil(effectivePixelSize); // Use Math.ceil for selection for better visibility
+      const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+      const outlineY = Math.round(gridY * effectivePixelSize + position.y);
 
-        ctx.strokeStyle = "black";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
-      }
+      ctx.strokeStyle = "black";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
     }
   }, [pixels, zoom, position, selectedPixel, hoveredPixel]); // ADDED selectedPixel, hoveredPixel
 
@@ -343,17 +361,7 @@ export function Canvas() {
 
     if (e.button === 0) {
       // Left click
-      // Stop any ongoing momentum animation (mouse or key)
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-        animationFrameRef.current = null;
-      }
-      velocityRef.current = { x: 0, y: 0 }; // Reset velocity
-      // Reset key pressed states
-      Object.keys(keysPressedRef.current).forEach((key) => {
-        keysPressedRef.current[key as keyof typeof keysPressedRef.current] =
-          false;
-      });
+      stopAndResetAnimations(); // Use the utility function
 
       // Store initial mouse position but don't start dragging yet
       pendingDragStartInfoRef.current = {
@@ -422,20 +430,16 @@ export function Canvas() {
     if (!wasDragging && pendingDragStartInfoRef.current) {
       const canvas = canvasRef.current;
       const rect = canvas?.getBoundingClientRect();
-      if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
-        const clickX = pendingDragStartInfoRef.current.clientX - rect.left;
-        const clickY = pendingDragStartInfoRef.current.clientY - rect.top;
+      if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) { // Keep initial pixel data check
+        const { gridX, gridY } = calculateGridCoordinates(
+          pendingDragStartInfoRef.current.clientX,
+          pendingDragStartInfoRef.current.clientY,
+          rect,
+          position,
+          zoom
+        );
 
-        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-        const gridX = Math.floor((clickX - position.x) / effectivePixelSize);
-        const gridY = Math.floor((clickY - position.y) / effectivePixelSize);
-
-        if (
-          gridY >= 0 &&
-          gridY < pixels.length &&
-          gridX >= 0 &&
-          gridX < pixels[gridY].length
-        ) {
+        if (isPixelInBounds(gridX, gridY, pixels)) {
           // If clicking the same selected pixel, deselect it. Otherwise, select the new one.
           if (
             selectedPixel &&
@@ -479,17 +483,7 @@ export function Canvas() {
     setMouseEventArgsForHover(null); // Clear hover on wheel event
     setIsDragging(false);
 
-    // Stop any ongoing momentum animation (mouse or key)
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-      velocityRef.current = { x: 0, y: 0 };
-    }
-    // Reset key pressed states
-    Object.keys(keysPressedRef.current).forEach((key) => {
-      keysPressedRef.current[key as keyof typeof keysPressedRef.current] =
-        false;
-    });
+    stopAndResetAnimations(); // Use the utility function
 
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     const newZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom + delta));
