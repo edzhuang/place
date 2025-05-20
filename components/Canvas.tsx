@@ -3,9 +3,8 @@
 import type React from "react";
 import { DEFAULT_PIXEL_SIZE, MIN_ZOOM, MAX_ZOOM } from "@/constants/canvas";
 
-import { useRef, useEffect, useCallback, useState } from "react"; // Added useState
+import { useRef, useEffect, useCallback, useState } from "react";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { OverlayCanvas } from "@/components/OverlayCanvas"; // Import the new component
 
 // Constants for momentum
 const DAMPING_FACTOR = 0.92; // How quickly the momentum slows down (0 to 1)
@@ -33,7 +32,10 @@ export function Canvas() {
     ArrowLeft: false,
     ArrowRight: false,
   });
-  // REMOVED: const [hoveredPixel, setHoveredPixel] = useState<{ x: number; y: number; } | null>(null);
+  const [hoveredPixel, setHoveredPixel] = useState<{
+    x: number;
+    y: number;
+  } | null>(null); // ADDED from OverlayCanvas
   const [mouseEventArgsForHover, setMouseEventArgsForHover] = useState<{
     clientX: number;
     clientY: number;
@@ -54,53 +56,150 @@ export function Canvas() {
     setDragStart,
   } = useCanvas();
 
-  // Draw the canvas
+  // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)
+  useEffect(() => {
+    if (!mouseEventArgsForHover) {
+      if (hoveredPixel !== null) {
+        setHoveredPixel(null);
+      }
+      return;
+    }
+
+    if (
+      !pixels ||
+      pixels.length === 0 ||
+      !pixels[0] ||
+      pixels[0].length === 0
+    ) {
+      if (hoveredPixel !== null) {
+        setHoveredPixel(null);
+      }
+      return;
+    }
+
+    const { clientX, clientY } = mouseEventArgsForHover;
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+    // Adjust clientX and clientY with rect.left and rect.top for accurate grid calculation relative to the canvas
+    const gridX = Math.floor(
+      (clientX - rect.left - position.x) / effectivePixelSize
+    );
+    const gridY = Math.floor(
+      (clientY - rect.top - position.y) / effectivePixelSize
+    );
+
+    let newHoveredPixelTarget = null;
+    if (
+      gridY >= 0 &&
+      gridY < pixels.length &&
+      gridX >= 0 &&
+      gridX < pixels[gridY].length
+    ) {
+      newHoveredPixelTarget = { x: gridX, y: gridY };
+    }
+
+    if (
+      newHoveredPixelTarget?.x !== hoveredPixel?.x ||
+      newHoveredPixelTarget?.y !== hoveredPixel?.y
+    ) {
+      setHoveredPixel(newHoveredPixelTarget);
+    }
+  }, [mouseEventArgsForHover, pixels, zoom, position, hoveredPixel, canvasRef]);
+
+  // Draw the canvas (MERGED with drawOverlayCanvas logic)
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx || pixels.length === 0) return;
+    if (!canvas || !ctx) return; // Simplified guard
 
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Calculate effective pixel size based on zoom (can be a float)
-    const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+    // Draw pixels (original logic)
+    if (pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
+      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+      const drawSize = Math.ceil(effectivePixelSize);
 
-    // Determine the size to draw each pixel (rounded up to prevent gaps)
-    const drawSize = Math.ceil(effectivePixelSize);
+      for (let y = 0; y < pixels.length; y++) {
+        for (let x = 0; x < pixels[y].length; x++) {
+          const currentPixelX = x * effectivePixelSize + position.x;
+          const currentPixelY = y * effectivePixelSize + position.y;
 
-    // Draw pixels
-    for (let y = 0; y < pixels.length; y++) {
-      for (let x = 0; x < pixels[y].length; x++) {
-        // Calculate the precise, potentially fractional, top-left corner of the pixel
-        const currentPixelX = x * effectivePixelSize + position.x;
-        const currentPixelY = y * effectivePixelSize + position.y;
+          if (
+            currentPixelX + effectivePixelSize >= 0 &&
+            currentPixelX <= canvas.width &&
+            currentPixelY + effectivePixelSize >= 0 &&
+            currentPixelY <= canvas.height
+          ) {
+            const drawX = Math.round(currentPixelX);
+            const drawY = Math.round(currentPixelY);
 
-        // Only draw pixels that are visible in the viewport
-        // This check uses the precise coordinates and effective size
-        if (
-          currentPixelX + effectivePixelSize >= 0 &&
-          currentPixelX <= canvas.width &&
-          currentPixelY + effectivePixelSize >= 0 &&
-          currentPixelY <= canvas.height
-        ) {
-          // For actual drawing, round the coordinates to snap to the browser's pixel grid
-          const drawX = Math.round(currentPixelX);
-          const drawY = Math.round(currentPixelY);
-
-          ctx.fillStyle = pixels[y][x];
-          ctx.fillRect(drawX, drawY, drawSize, drawSize);
+            ctx.fillStyle = pixels[y][x];
+            ctx.fillRect(drawX, drawY, drawSize, drawSize);
+          }
         }
       }
     }
-  }, [pixels, zoom, position]);
 
-  // REMOVED: drawOverlayCanvas and its related useEffects are now in OverlayCanvas.tsx
+    // Draw hover outline (from OverlayCanvas)
+    if (
+      hoveredPixel &&
+      pixels.length > 0 &&
+      pixels[0] &&
+      pixels[0].length > 0
+    ) {
+      const { x: gridX, y: gridY } = hoveredPixel;
 
-  // Update canvas when pixels, zoom, or position changes
+      if (
+        gridY >= 0 &&
+        gridY < pixels.length &&
+        gridX >= 0 &&
+        gridX < pixels[gridY].length
+      ) {
+        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+        const drawSize = Math.round(effectivePixelSize);
+        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+
+        ctx.strokeStyle = "gray";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+      }
+    }
+
+    // Draw selected pixel outline (from OverlayCanvas)
+    if (
+      selectedPixel &&
+      pixels.length > 0 &&
+      pixels[0] &&
+      pixels[0].length > 0
+    ) {
+      const { x: gridX, y: gridY } = selectedPixel;
+
+      if (
+        gridY >= 0 &&
+        gridY < pixels.length &&
+        gridX >= 0 &&
+        gridX < pixels[gridY].length
+      ) {
+        const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+        const drawSize = Math.ceil(effectivePixelSize); // Use Math.ceil for selection for better visibility
+        const outlineX = Math.round(gridX * effectivePixelSize + position.x);
+        const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+
+        ctx.strokeStyle = "black";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+      }
+    }
+  }, [pixels, zoom, position, selectedPixel, hoveredPixel]); // ADDED selectedPixel, hoveredPixel
+
+  // Update canvas when relevant state changes
   useEffect(() => {
     drawCanvas();
-  }, [pixels, zoom, position, drawCanvas]);
+  }, [pixels, zoom, position, selectedPixel, hoveredPixel, drawCanvas]); // ADDED selectedPixel, hoveredPixel
 
   // Effect for cleaning up animation frame on unmount
   useEffect(() => {
@@ -119,16 +218,13 @@ export function Canvas() {
         canvasRef.current.width = window.innerWidth;
         canvasRef.current.height = window.innerHeight;
       }
-      // REMOVED: Overlay canvas resize is handled in OverlayCanvas.tsx
-      // Explicitly call draw functions after resize
-      drawCanvas();
-      // REMOVED: drawOverlayCanvas();
+      drawCanvas(); // This will now also redraw overlays
     };
 
     handleResize(); // Initial size
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-  }, [drawCanvas]); // REMOVED: drawOverlayCanvas dependency
+  }, [drawCanvas]);
 
   // MODIFIED: Function to start and manage momentum scrolling animation (now handles keys too)
   const startMomentumScroll = useCallback(() => {
@@ -412,27 +508,17 @@ export function Canvas() {
   };
 
   return (
-    <>
-      {" "}
-      {/* Use a fragment to return multiple sibling elements */}
-      <canvas
-        ref={canvasRef}
-        className={`fixed inset-0 ${
-          isDragging ? "cursor-grabbing" : "cursor-crosshair"
-        }`}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
-        onWheel={handleWheel}
-      />
-      <OverlayCanvas
-        zoom={zoom}
-        position={position}
-        pixels={pixels}
-        selectedPixel={selectedPixel}
-        mouseEventArgsForHover={mouseEventArgsForHover} // Pass mouse event args
-      />
-    </>
+    <canvas
+      ref={canvasRef}
+      className={`fixed inset-0 ${
+        isDragging ? "cursor-grabbing" : "cursor-crosshair"
+      } pointer-events-auto`} // Ensure canvas receives pointer events
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      onWheel={handleWheel}
+      // Width and height are set dynamically by resize effect
+    />
   );
 }
