@@ -1,15 +1,14 @@
 "use client";
 
-import { Button } from "@/components/ui/Button";
 import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Drawer";
-import { Plus, Minus } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";
+import { ZoomControls } from "@/components/ZoomControls";
 
 import clsx from "clsx";
 
 export default function HomePage() {
-  const { zoom, setZoom, selectedPixel } = useCanvas();
+  const { selectedPixel } = useCanvas();
 
   return (
     <>
@@ -22,26 +21,7 @@ export default function HomePage() {
         )}
       >
         <div className="flex justify-end p-8">
-          <div className="flex flex-col gap-2">
-            <Button
-              variant="outline"
-              size="md"
-              subject="icon"
-              onClick={() => setZoom(zoom + 0.1)}
-              className="pointer-events-auto"
-            >
-              <Plus />
-            </Button>
-            <Button
-              variant="outline"
-              size="md"
-              subject="icon"
-              onClick={() => setZoom(zoom - 0.1)}
-              className="pointer-events-auto"
-            >
-              <Minus />
-            </Button>
-          </div>
+          <ZoomControls />
         </div>
         <div className="pointer-events-auto">
           <Drawer />
