@@ -23,6 +23,10 @@ import { createClient } from "@supabase/supabase-js";
 interface CanvasContextState {
   pixels: string[][];
   setPixels: React.Dispatch<React.SetStateAction<string[][]>>;
+  hoveredPixel: { x: number; y: number } | null;
+  setHoveredPixel: React.Dispatch<
+    React.SetStateAction<{ x: number; y: number } | null>
+  >;
   selectedPixel: { x: number; y: number } | null;
   setSelectedPixel: React.Dispatch<
     React.SetStateAction<{ x: number; y: number } | null>
@@ -60,6 +64,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const [pixels, setPixels] = useState<string[][]>([[]]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hoveredPixel, setHoveredPixel] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [selectedPixel, setSelectedPixel] = useState<{
     x: number;
     y: number;
@@ -307,6 +315,8 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = {
     pixels,
     setPixels,
+    hoveredPixel,
+    setHoveredPixel,
     selectedPixel,
     setSelectedPixel,
     selectedColor,

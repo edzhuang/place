@@ -70,10 +70,6 @@ export function Canvas() {
     ArrowLeft: false,
     ArrowRight: false,
   });
-  const [hoveredPixel, setHoveredPixel] = useState<{
-    x: number;
-    y: number;
-  } | null>(null); // ADDED from OverlayCanvas
   const [mouseEventArgsForHover, setMouseEventArgsForHover] = useState<{
     clientX: number;
     clientY: number;
@@ -87,8 +83,10 @@ export function Canvas() {
   // Use context values
   const {
     pixels,
-    selectedPixel, // Get selectedPixel from context
-    setSelectedPixel, // Get setSelectedPixel from context
+    hoveredPixel,
+    setHoveredPixel,
+    selectedPixel,
+    setSelectedPixel,
     zoom,
     adjustZoom,
     position,
@@ -175,21 +173,6 @@ export function Canvas() {
   // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)
   useEffect(() => {
     if (!mouseEventArgsForHover) {
-      if (hoveredPixel !== null) {
-        setHoveredPixel(null);
-      }
-      return;
-    }
-
-    if (
-      !pixels ||
-      pixels.length === 0 ||
-      !pixels[0] ||
-      pixels[0].length === 0
-    ) {
-      if (hoveredPixel !== null) {
-        setHoveredPixel(null);
-      }
       return;
     }
 
@@ -216,7 +199,15 @@ export function Canvas() {
     ) {
       setHoveredPixel(newHoveredPixelTarget);
     }
-  }, [mouseEventArgsForHover, pixels, zoom, position, hoveredPixel, canvasRef]);
+  }, [
+    mouseEventArgsForHover,
+    pixels,
+    zoom,
+    position,
+    hoveredPixel,
+    setHoveredPixel,
+    canvasRef,
+  ]);
 
   // Draw the canvas (MERGED with drawOverlayCanvas logic)
   const drawCanvas = useCallback(() => {
