@@ -8,7 +8,7 @@ export function Drawer() {
   const { setSelectedPixel, placePixel } = useCanvas();
 
   return (
-    <div className="w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
+    <div className="w-full flex flex-col bg-background/90 backdrop-blur-lg justify-evenly h-32 px-8 items-center border-t">
       <Palette />
       <div className="flex flex-row gap-2">
         <Button

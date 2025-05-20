@@ -21,6 +21,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ReactScan } from "@/components/ReactScan";
 import React from "react";
+import { Button } from "@/components/ui/Button";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -73,8 +74,16 @@ export default function RootLayout({
               </NavigationMenuList>
               <NavigationMenuList>
                 <SignedOut>
-                  <SignInButton />
-                  <SignUpButton />
+                  <SignInButton>
+                    <Button size="sm" variant="outline">
+                      Sign in
+                    </Button>
+                  </SignInButton>
+                  <SignUpButton>
+                    <Button size="sm" variant="primary">
+                      Sign up
+                    </Button>
+                  </SignUpButton>
                 </SignedOut>
                 <SignedIn>
                   <UserButton />
