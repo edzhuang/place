@@ -10,7 +10,6 @@ import {
   ReactNode,
   useEffect,
   useMemo,
-  useRef,
 } from "react";
 import {
   COLORS,
@@ -51,7 +50,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [lastPlacedTimestamp, setLastPlacedTimestamp] = useState<number | null>(
     null
   );
-  const initialFetchDone = useRef(false); // Add this ref
 
   // Effect to load initial lastPlacedTimestamp from user metadata
   useEffect(() => {
@@ -94,8 +92,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   // Fetch the initial pixels
   useEffect(() => {
     const fetchInitialPixels = async () => {
-      setIsLoading(true);
-
       const { data, error } = await client
         .from(PIXELS_TABLE)
         .select("x, y, r, g, b, placed_by");
@@ -133,11 +129,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
-    // Only fetch if client is available and initial fetch hasn't been done
-    if (client && !initialFetchDone.current) {
-      fetchInitialPixels();
-      initialFetchDone.current = true;
-    }
+    fetchInitialPixels();
   }, [client]); // Keep client as dependency to ensure it's initialized
 
   // Subscribe to real-time changes
