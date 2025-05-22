@@ -317,28 +317,32 @@ export function Canvas() {
       // Draw username if available
       if (selectedPixelUser) {
         const FONT_SIZE = 16; // Using the user's preferred font size
-        const PADDING = 5;
-        ctx.font = `${FONT_SIZE}px Arial`;
+        const PADDING_X = 12;
+        const PADDING_Y = 4;
+        ctx.font = `${FONT_SIZE}px Inter`;
         ctx.textAlign = "center";
-        const text = `Placed by: ${selectedPixelUser}`;
+        const text = `Placed by ${selectedPixelUser}`;
         const textX = outlineX + drawSize / 2;
         const textY = outlineY - 24; // Adjusted to center the text better
 
         const textMetrics = ctx.measureText(text);
         const textWidth = textMetrics.width;
         // Approximate text height based on font size, can be more precise if needed
-        const textHeight = FONT_SIZE;
-
-        const rectWidth = textWidth + PADDING * 2;
-        const rectHeight = textHeight + PADDING * 2;
+        const textHeight =
+          textMetrics.fontBoundingBoxAscent +
+          textMetrics.fontBoundingBoxDescent;
+        const rectWidth = textWidth + PADDING_X * 2;
+        const rectHeight = textHeight + PADDING_Y * 2;
         // Position the rectangle centered above the pixel selection
         // outlineY - 15 was the original text Y, so we base the rect Y on that
-        const rectX = textX - textWidth / 2 - PADDING;
-        const rectY = textY - textHeight / 2 - PADDING; // Adjusted to center the text better
+        const rectX = textX - textWidth / 2 - PADDING_X;
+        const rectY = textY - textHeight / 2 - PADDING_Y; // Adjusted to center the text better
 
         // Draw black background rectangle
         ctx.fillStyle = "black";
-        ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+        ctx.beginPath();
+        ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 100);
+        ctx.fill();
 
         // Draw username text (white for contrast)
         ctx.fillStyle = "white";
