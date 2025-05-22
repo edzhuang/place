@@ -1,4 +1,5 @@
 export const PIXELS_TABLE = "pixels";
+export const delay = 10000; // 10 seconds
 
 // Default canvas size
 export const CANVAS_WIDTH = 100;
