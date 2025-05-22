@@ -135,8 +135,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    if (!isSignedIn) return;
-
     // Subscribe to real-time changes on the PIXELS_TABLE
     const channel = client
       .channel("realtime-pixels-updates") // Unique channel name
@@ -203,7 +201,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       client.removeChannel(channel);
     };
-  }, [isSignedIn, client]);
+  }, [client]);
 
   const adjustZoom = (
     multFactor: number,

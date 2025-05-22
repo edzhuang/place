@@ -2,7 +2,7 @@ import { Palette } from "@/components/Palette";
 import { Button } from "@/components/ui/Button";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { SignInButton } from "@clerk/nextjs";
-import { delay } from "@/constants/canvas";
+import { cooldown } from "@/constants/canvas";
 import { useEffect, useState } from "react";
 import { Progress } from "@/components/ui/Progress";
 
@@ -22,7 +22,7 @@ export function Drawer() {
   useEffect(() => {
     if (lastPlacedTimestamp) {
       const intervalId = setInterval(() => {
-        const newRemainingTime = lastPlacedTimestamp + delay - Date.now();
+        const newRemainingTime = lastPlacedTimestamp + cooldown - Date.now();
         if (newRemainingTime > 0) {
           setRemainingTime(newRemainingTime);
         } else {
@@ -32,7 +32,7 @@ export function Drawer() {
       }, 100);
 
       // Set initial remaining time
-      const initialRemainingTime = lastPlacedTimestamp + delay - Date.now();
+      const initialRemainingTime = lastPlacedTimestamp + cooldown - Date.now();
       setRemainingTime(initialRemainingTime > 0 ? initialRemainingTime : 0);
 
       return () => clearInterval(intervalId);
@@ -73,7 +73,7 @@ export function Drawer() {
       {showCooldownOverlay && isSignedIn && (
         <DrawerOverlay>
           <div className="flex flex-col items-center text-center gap-4">
-            <Progress value={(remainingTime / delay) * 100} />
+            <Progress value={(remainingTime / cooldown) * 100} />
             <div className="text-md">
               Next pixel available in {Math.ceil(remainingTime / 1000)} seconds
             </div>

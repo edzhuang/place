@@ -1,5 +1,5 @@
 export const PIXELS_TABLE = "pixels";
-export const delay = 60000; // 1 minute cooldown for placing a pixel
+export const cooldown = 10000;
 
 // Default canvas size
 export const CANVAS_WIDTH = 100;

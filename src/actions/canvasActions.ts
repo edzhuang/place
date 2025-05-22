@@ -4,7 +4,7 @@ import { createServerSupabaseClient } from "@/utils/supabase/server";
 import { auth, currentUser, clerkClient } from "@clerk/nextjs/server"; // Renamed import for clarity
 import { PIXELS_TABLE } from "@/constants/canvas";
 import type { Coordinates, Color } from "@/types/canvas";
-import { delay } from "@/constants/canvas";
+import { cooldown } from "@/constants/canvas";
 
 export async function placePixelAction(
   selectedPixel: Coordinates,
@@ -21,10 +21,10 @@ export async function placePixelAction(
   const lastPlaced = user?.publicMetadata?.lastPlaced as number | undefined;
   const now: number = Date.now();
 
-  if (lastPlaced && now - lastPlaced < delay) {
+  if (lastPlaced && now - lastPlaced < cooldown) {
     return {
       success: false,
-      error: `You can only place a pixel every ${delay / 1000} seconds.`,
+      error: `You can only place a pixel every ${cooldown / 1000} seconds.`,
     };
   }
 
