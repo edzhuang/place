@@ -1,3 +1,0 @@
-[auth.third_party.clerk]
-enabled = true
-domain = "https://new-alpaca-8.clerk.accounts.dev"
