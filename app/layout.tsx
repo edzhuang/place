@@ -19,7 +19,6 @@ import {
 } from "@/components/ui/NavigationMenu";
 import Image from "next/image";
 import Link from "next/link";
-import { ReactScan } from "@/components/ReactScan";
 import React from "react";
 import { Button } from "@/components/ui/Button";
 
@@ -50,7 +49,6 @@ export default function RootLayout({
       }}
     >
       <html lang="en" suppressHydrationWarning>
-        <ReactScan />
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >

@@ -1,6 +1,8 @@
 "use client";
 
 import type React from "react";
+import type { Pixel, Coordinates, CanvasContextState } from "@/types/canvas";
+import { PIXELS_TABLE } from "@/constants/canvas";
 import {
   createContext,
   useContext,
@@ -20,58 +22,25 @@ import {
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 
-interface CanvasContextState {
-  pixels: string[][];
-  setPixels: React.Dispatch<React.SetStateAction<string[][]>>;
-  hoveredPixel: { x: number; y: number } | null;
-  setHoveredPixel: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number } | null>
-  >;
-  selectedPixel: { x: number; y: number } | null;
-  setSelectedPixel: React.Dispatch<
-    React.SetStateAction<{ x: number; y: number } | null>
-  >;
-  selectedColor: string;
-  setSelectedColor: React.Dispatch<React.SetStateAction<string>>;
-  zoom: number;
-  adjustZoom: (multFactor: number, anchor?: { x: number; y: number }) => void;
-  position: { x: number; y: number };
-  setPosition: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
-  isDragging: boolean;
-  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
-  dragStart: { x: number; y: number };
-  setDragStart: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
-  placePixel: () => Promise<void>;
-  isLoading: boolean; // To indicate loading state
-}
+const defaultPixel: Pixel = {
+  color: {
+    r: 255,
+    g: 255,
+    b: 255,
+  },
+  placedBy: null,
+};
 
 const CanvasContext = createContext<CanvasContextState | undefined>(undefined);
 
-// Define your database and table names
-const PIXELS_TABLE = "pixels"; // Replace with your actual table name
-
-// Define an interface for the structure of pixel data from Supabase
-interface SupabasePixel {
-  x: number;
-  y: number;
-  color: string;
-  // Add any other fields that might be part of your pixel data
-}
-
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
-  const { isSignedIn } = useUser();
+  const { user, isSignedIn } = useUser();
   const { session } = useSession();
 
-  const [pixels, setPixels] = useState<string[][]>([[]]);
+  const [pixels, setPixels] = useState<Pixel[][]>([[]]);
   const [isLoading, setIsLoading] = useState(true);
-  const [hoveredPixel, setHoveredPixel] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
-  const [selectedPixel, setSelectedPixel] = useState<{
-    x: number;
-    y: number;
-  } | null>(null);
+  const [hoveredPixel, setHoveredPixel] = useState<Coordinates | null>(null);
+  const [selectedPixel, setSelectedPixel] = useState<Coordinates | null>(null);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [zoom, setZoom] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -94,8 +63,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return createClerkSupabaseClient();
   }, [session]);
 
+  // Fetch the initial pixels
   useEffect(() => {
-    if (typeof window !== "undefined") {
+    const centerCanvas = () => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
@@ -104,15 +74,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
 
       setPosition({ x: centeredX, y: centeredY });
-    }
-  }, [setPosition]);
+    };
 
-  useEffect(() => {
     const fetchInitialPixels = async () => {
       setIsLoading(true);
       const { data, error } = await client
         .from(PIXELS_TABLE)
-        .select("x, y, color");
+        .select("x, y, r, g, b, placed_by");
 
       if (error) {
         console.error("Error fetching pixels:", error);
@@ -121,9 +89,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (data) {
-        const newPixels = Array(CANVAS_HEIGHT)
+        const newPixels: Pixel[][] = Array(CANVAS_HEIGHT)
           .fill(null)
-          .map(() => Array(CANVAS_WIDTH).fill("#ffffff")); // Start with a white canvas
+          .map(() => Array(CANVAS_WIDTH).fill({ ...defaultPixel }));
 
         data.forEach((pixel) => {
           if (
@@ -132,7 +100,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
             pixel.x >= 0 &&
             pixel.x < CANVAS_WIDTH
           ) {
-            newPixels[pixel.y][pixel.x] = pixel.color;
+            newPixels[pixel.y][pixel.x] = {
+              color: {
+                r: pixel.r,
+                g: pixel.g,
+                b: pixel.b,
+              },
+              placedBy: pixel.placed_by,
+            };
           }
         });
         setPixels(newPixels);
@@ -140,9 +115,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
+    centerCanvas();
     fetchInitialPixels();
   }, [client]);
 
+  // Subscribe to real-time changes
   useEffect(() => {
     if (!isSignedIn) return;
 
@@ -160,85 +137,39 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           console.log("Realtime change received!", payload);
           const { new: newRecord, old: oldRecord, eventType } = payload;
 
-          // Type guard to ensure the record is a SupabasePixel
-          const isSupabasePixel = (
-            record: unknown
-          ): record is SupabasePixel => {
-            return (
-              typeof record === "object" &&
-              record !== null &&
-              "x" in record &&
-              typeof (record as SupabasePixel).x === "number" &&
-              "y" in record &&
-              typeof (record as SupabasePixel).y === "number" &&
-              "color" in record &&
-              typeof (record as SupabasePixel).color === "string"
-            );
-          };
-
           if (eventType === "INSERT" || eventType === "UPDATE") {
-            if (isSupabasePixel(newRecord)) {
-              setPixels((prevPixels) => {
-                if (
-                  !Array.isArray(prevPixels) ||
-                  !Array.isArray(prevPixels[0])
-                ) {
-                  console.warn(
-                    "prevPixels is not in the expected format, re-fetching might be needed or check initial state."
-                  );
-                  const initialSafePixels = Array(CANVAS_HEIGHT)
-                    .fill(null)
-                    .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
-                  if (
-                    newRecord.y >= 0 &&
-                    newRecord.y < CANVAS_HEIGHT &&
-                    newRecord.x >= 0 &&
-                    newRecord.x < CANVAS_WIDTH
-                  ) {
-                    initialSafePixels[newRecord.y][newRecord.x] =
-                      newRecord.color;
-                  }
-                  return initialSafePixels;
-                }
-
-                const updatedPixels = prevPixels.map((row) => [...row]);
-                if (
-                  newRecord.y >= 0 &&
-                  newRecord.y < CANVAS_HEIGHT &&
-                  newRecord.x >= 0 &&
-                  newRecord.x < CANVAS_WIDTH
-                ) {
-                  updatedPixels[newRecord.y][newRecord.x] = newRecord.color;
-                }
-                return updatedPixels;
-              });
-            }
+            setPixels((prevPixels) => {
+              const updatedPixels = prevPixels.map((row) => [...row]);
+              if (
+                newRecord.y >= 0 &&
+                newRecord.y < CANVAS_HEIGHT &&
+                newRecord.x >= 0 &&
+                newRecord.x < CANVAS_WIDTH
+              ) {
+                updatedPixels[newRecord.y][newRecord.x] = {
+                  color: {
+                    r: newRecord.r,
+                    g: newRecord.g,
+                    b: newRecord.b,
+                  },
+                  placedBy: newRecord.placed_by,
+                };
+              }
+              return updatedPixels;
+            });
           } else if (eventType === "DELETE") {
-            if (isSupabasePixel(oldRecord)) {
-              setPixels((prevPixels) => {
-                if (
-                  !Array.isArray(prevPixels) ||
-                  !Array.isArray(prevPixels[0])
-                ) {
-                  console.warn(
-                    "prevPixels is not in the expected format for DELETE."
-                  );
-                  return Array(CANVAS_HEIGHT)
-                    .fill(null)
-                    .map(() => Array(CANVAS_WIDTH).fill("#FFFFFF"));
-                }
-                const updatedPixels = prevPixels.map((row) => [...row]);
-                if (
-                  oldRecord.y >= 0 &&
-                  oldRecord.y < CANVAS_HEIGHT &&
-                  oldRecord.x >= 0 &&
-                  oldRecord.x < CANVAS_WIDTH
-                ) {
-                  updatedPixels[oldRecord.y][oldRecord.x] = "#FFFFFF"; // Revert to default color
-                }
-                return updatedPixels;
-              });
-            }
+            setPixels((prevPixels) => {
+              const updatedPixels = prevPixels.map((row) => [...row]);
+              if (
+                oldRecord.y >= 0 &&
+                oldRecord.y < CANVAS_HEIGHT &&
+                oldRecord.x >= 0 &&
+                oldRecord.x < CANVAS_WIDTH
+              ) {
+                updatedPixels[oldRecord.y][oldRecord.x] = { ...defaultPixel };
+              }
+              return updatedPixels;
+            });
           }
         }
       )
@@ -287,11 +218,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     if (selectedPixel) {
       const newPixels = pixels.map((row, y) =>
-        row.map((pixelColor, x) => {
+        row.map((pixel, x) => {
           if (x === selectedPixel.x && y === selectedPixel.y) {
-            return selectedColor;
+            return { ...pixel, color: selectedColor };
           }
-          return pixelColor;
+          return pixel;
         })
       );
       setPixels(newPixels);
@@ -301,7 +232,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         {
           x: selectedPixel.x,
           y: selectedPixel.y,
-          color: selectedColor,
+          r: selectedColor.r,
+          g: selectedColor.g,
+          b: selectedColor.b,
+          placed_by: user?.id,
         },
         { onConflict: "x,y" }
       );

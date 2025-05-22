@@ -10,13 +10,13 @@ export function Palette() {
     <div className="flex flex-wrap gap-1">
       {COLORS.map((color) => (
         <button
-          key={color}
+          key={`${color.r}, ${color.g}, ${color.b}`}
           className={clsx("w-8 h-8 rounded-md border", {
             "outline outline-primary": selectedColor === color,
           })}
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: `rgb(${color.r}, ${color.g}, ${color.b})` }}
           onClick={() => setSelectedColor(color)}
-          aria-label={`Select color ${color}`}
+          aria-label={`Select color rgb(${color.r}, ${color.g}, ${color.b})`}
         />
       ))}
     </div>

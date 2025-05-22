@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import type { Pixel, Coordinates } from "@/types/canvas";
 import {
   DEFAULT_PIXEL_SIZE,
   DAMPING_FACTOR,
@@ -11,20 +12,8 @@ import {
 import { useRef, useEffect, useCallback, useState } from "react";
 import { useCanvas } from "@/contexts/CanvasContext";
 
-// Utility function to parse hex color to RGB
-const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? {
-        r: parseInt(result[1], 16),
-        g: parseInt(result[2], 16),
-        b: parseInt(result[3], 16),
-      }
-    : null;
-};
-
 // Utility function to check if a pixel is within bounds
-const isPixelInBounds = (gridX: number, gridY: number, pixels: string[][]) => {
+const isPixelInBounds = (gridX: number, gridY: number, pixels: Pixel[][]) => {
   return (
     pixels.length > 0 &&
     pixels[0] &&
@@ -41,7 +30,7 @@ const calculateGridCoordinates = (
   clientX: number,
   clientY: number,
   rect: DOMRect,
-  position: { x: number; y: number },
+  position: Coordinates,
   zoom: number
 ) => {
   const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
@@ -60,8 +49,8 @@ export function Canvas() {
   } | null>(null);
 
   // Refs for momentum
-  const lastMousePositionRef = useRef<{ x: number; y: number } | null>(null);
-  const velocityRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastMousePositionRef = useRef<Coordinates | null>(null);
+  const velocityRef = useRef<Coordinates>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
   // Ref for tracking pressed keys
   const keysPressedRef = useRef({
@@ -74,6 +63,9 @@ export function Canvas() {
     clientX: number;
     clientY: number;
   } | null>(null); // ADDED state for passing mouse events to OverlayCanvas
+  const [selectedPixelUser, setSelectedPixelUser] = useState<string | null>(
+    null
+  ); // ADDED state for selected pixel's user
 
   // Ref for the off-screen canvas used for rendering the pixel grid
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -149,26 +141,60 @@ export function Canvas() {
 
     for (let y = 0; y < gridHeight; y++) {
       for (let x = 0; x < gridWidth; x++) {
-        const colorStr = pixels[y][x];
+        const color = pixels[y][x].color;
         const index = (y * gridWidth + x) * 4;
-        if (colorStr) {
-          const rgb = hexToRgb(colorStr);
-          if (rgb) {
-            data[index] = rgb.r;
-            data[index + 1] = rgb.g;
-            data[index + 2] = rgb.b;
-            data[index + 3] = 255; // Alpha
-          } else {
-            data[index + 3] = 0; // Transparent for invalid hex
-          }
-        } else {
-          data[index + 3] = 0; // Transparent for missing color
-        }
+        data[index] = color.r;
+        data[index + 1] = color.g;
+        data[index + 2] = color.b;
+        data[index + 3] = 255;
       }
     }
     ctx.putImageData(imageData, 0, 0);
     // The main drawing useEffect will pick up this change via 'pixels' dependency and schedule a redraw.
   }, [pixels]);
+
+  // NEW EFFECT: Fetch Clerk username for selected pixel
+  useEffect(() => {
+    const fetchUsername = async (userId: string) => {
+      try {
+        const response = await fetch(`/api/users/${userId}`);
+        if (!response.ok) {
+          // If the response status is 404, it means the user was not found
+          if (response.status === 404) {
+            console.log(`User not found for ID: ${userId}`);
+            return null; // Return null or a default/anonymous username
+          }
+          throw new Error(`Error fetching username: ${response.statusText}`);
+        }
+        const data = await response.json();
+        return data.username;
+      } catch (error) {
+        console.error("Failed to fetch username from API:", error);
+        return `User_${userId.substring(0, 5)}`; // Fallback to mock/placeholder on error
+      }
+    };
+
+    if (
+      selectedPixel &&
+      pixels &&
+      pixels[selectedPixel.y] &&
+      pixels[selectedPixel.y][selectedPixel.x]
+    ) {
+      const placerId = pixels[selectedPixel.y][selectedPixel.x].placedBy;
+      if (placerId) {
+        fetchUsername(placerId)
+          .then(setSelectedPixelUser)
+          .catch((err) => {
+            console.error("Failed to fetch username:", err);
+            setSelectedPixelUser(null);
+          });
+      } else {
+        setSelectedPixelUser(null);
+      }
+    } else {
+      setSelectedPixelUser(null);
+    }
+  }, [selectedPixel, pixels]);
 
   // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)
   useEffect(() => {
@@ -276,8 +302,41 @@ export function Canvas() {
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
       ctx.strokeRect(outlineX, outlineY, drawSize, drawSize);
+
+      // Draw username if available
+      if (selectedPixelUser) {
+        const FONT_SIZE = 16; // Using the user's preferred font size
+        const PADDING = 5;
+        ctx.font = `${FONT_SIZE}px Arial`;
+        ctx.textAlign = "center";
+        const text = `Placed by: ${selectedPixelUser}`;
+        const textX = outlineX + drawSize / 2;
+        const textY = outlineY - 24; // Adjusted to center the text better
+
+        const textMetrics = ctx.measureText(text);
+        const textWidth = textMetrics.width;
+        // Approximate text height based on font size, can be more precise if needed
+        const textHeight = FONT_SIZE;
+
+        const rectWidth = textWidth + PADDING * 2;
+        const rectHeight = textHeight + PADDING * 2;
+        // Position the rectangle centered above the pixel selection
+        // outlineY - 15 was the original text Y, so we base the rect Y on that
+        const rectX = textX - textWidth / 2 - PADDING;
+        const rectY = textY - textHeight / 2 - PADDING; // Adjusted to center the text better
+
+        // Draw black background rectangle
+        ctx.fillStyle = "black";
+        ctx.fillRect(rectX, rectY, rectWidth, rectHeight);
+
+        // Draw username text (white for contrast)
+        ctx.fillStyle = "white";
+        ctx.textBaseline = "middle"; // Center the text vertically
+        ctx.textAlign = "center";
+        ctx.fillText(text, textX, textY);
+      }
     }
-  }, [pixels, zoom, position, selectedPixel, hoveredPixel]); // ADDED selectedPixel, hoveredPixel
+  }, [pixels, zoom, position, selectedPixel, hoveredPixel, selectedPixelUser]); // ADDED selectedPixelUser
 
   // Update canvas when relevant state changes, using requestAnimationFrame
   useEffect(() => {
@@ -535,6 +594,8 @@ export function Canvas() {
           setSelectedPixel(null); // Clicked outside grid, deselect
         }
       }
+
+      setSelectedPixelUser(null); // Clear selected pixel user on click
     }
 
     pendingDragStartInfoRef.current = null; // Clear pending drag info

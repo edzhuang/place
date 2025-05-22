@@ -1,3 +1,5 @@
+export const PIXELS_TABLE = "pixels";
+
 // Default canvas size
 export const CANVAS_WIDTH = 100;
 export const CANVAS_HEIGHT = 100;
@@ -13,19 +15,19 @@ export const MAX_KEY_VELOCITY = 15; // Maximum velocity achievable with keys
 
 // Color palette
 export const COLORS = [
-  "#ff4500", // Red
-  "#ffa800", // Orange
-  "#ffd635", // Yellow
-  "#00a368", // Green
-  "#7eed56", // Light Green
-  "#2450a4", // Blue
-  "#3690ea", // Light Blue
-  "#51e9f4", // Cyan
-  "#811e9f", // Purple
-  "#ff99aa", // Pink
-  "#9c6926", // Brown
-  "#000000", // Black
-  "#898d90", // Gray
-  "#d4d7d9", // Light Gray
-  "#ffffff", // White
+  { r: 255, g: 69, b: 0 }, // Red
+  { r: 255, g: 168, b: 0 }, // Orange
+  { r: 255, g: 214, b: 53 }, // Yellow
+  { r: 0, g: 163, b: 104 }, // Green
+  { r: 126, g: 237, b: 86 }, // Light Green
+  { r: 36, g: 80, b: 164 }, // Blue
+  { r: 54, g: 144, b: 234 }, // Light Blue
+  { r: 81, g: 233, b: 244 }, // Cyan
+  { r: 129, g: 30, b: 159 }, // Purple
+  { r: 255, g: 153, b: 170 }, // Pink
+  { r: 156, g: 105, b: 38 }, // Brown
+  { r: 0, g: 0, b: 0 }, // Black
+  { r: 137, g: 141, b: 144 }, // Gray
+  { r: 212, g: 215, b: 217 }, // Light Gray
+  { r: 255, g: 255, b: 255 }, // White
 ];
