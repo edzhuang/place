@@ -40,6 +40,7 @@ export function Drawer() {
   }, [lastPlacedTimestamp]);
 
   const showCooldownOverlay = lastPlacedTimestamp && remainingTime > 0;
+  const secondsLeft = Math.ceil(remainingTime / 1000);
 
   return (
     <div className="relative w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
@@ -72,10 +73,14 @@ export function Drawer() {
 
       {showCooldownOverlay && isSignedIn && (
         <DrawerOverlay>
-          <div className="flex flex-col items-center text-center gap-4">
-            <Progress value={(remainingTime / cooldown) * 100} />
-            <div className="text-md">
-              Next pixel available in {Math.ceil(remainingTime / 1000)} seconds
+          <div className="flex flex-col items-center gap-4">
+            <Progress
+              className="w-64"
+              value={(remainingTime / cooldown) * 100}
+            />
+            <div className="text-md text-center">
+              Next pixel available in {secondsLeft}{" "}
+              {secondsLeft === 1 ? "second" : "seconds"}
             </div>
           </div>
         </DrawerOverlay>

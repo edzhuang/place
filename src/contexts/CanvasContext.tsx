@@ -134,6 +134,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Subscribe to real-time changes
   useEffect(() => {
+    if (!session) {
+      // Session is not yet available, wait for it before subscribing.
+      return;
+    }
+
     // Subscribe to real-time changes on the PIXELS_TABLE
     const channel = client
       .channel("realtime-pixels-updates") // Unique channel name
@@ -189,7 +194,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           console.log("Successfully subscribed to realtime pixel changes!");
         }
         if (status === "CHANNEL_ERROR") {
-          console.error(`Failed to subscribe: ${err?.message}`);
+          console.error(`Failed to subscribe: ${err?.message || JSON.stringify(err)}`);
         }
         if (status === "TIMED_OUT") {
           console.error("Subscription timed out");
@@ -200,7 +205,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       client.removeChannel(channel);
     };
-  }, [client]);
+  }, [client, session]); // Added session to dependencies
 
   const adjustZoom = (
     multFactor: number,
