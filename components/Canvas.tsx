@@ -155,9 +155,12 @@ export function Canvas() {
 
   // NEW EFFECT: Fetch Clerk username for selected pixel
   useEffect(() => {
+    const controller = new AbortController();
+    const signal = controller.signal;
+
     const fetchUsername = async (userId: string) => {
       try {
-        const response = await fetch(`/api/users/${userId}`);
+        const response = await fetch(`/api/users/${userId}`, { signal });
         if (!response.ok) {
           // If the response status is 404, it means the user was not found
           if (response.status === 404) {
@@ -169,6 +172,10 @@ export function Canvas() {
         const data = await response.json();
         return data.username;
       } catch (error) {
+        if ((error as Error).name === "AbortError") {
+          console.log("Fetch username aborted");
+          return null;
+        }
         console.error("Failed to fetch username from API:", error);
         return `User_${userId.substring(0, 5)}`; // Fallback to mock/placeholder on error
       }
@@ -194,6 +201,12 @@ export function Canvas() {
     } else {
       setSelectedPixelUser(null);
     }
+
+    return () => {
+      // Cleanup function to reset selected pixel user when the selected pixel changes
+      // And abort the fetch request if it's in progress
+      controller.abort();
+    };
   }, [selectedPixel, pixels]);
 
   // Effect to calculate hovered pixel based on mouse events (from OverlayCanvas)

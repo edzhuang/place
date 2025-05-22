@@ -21,6 +21,7 @@ import {
 } from "@/constants/canvas";
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
+import { placePixelAction } from "@/actions/canvasActions"; // Import the server action
 
 const defaultPixel: Pixel = {
   color: {
@@ -211,37 +212,37 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const placePixel = async () => {
-    if (!isSignedIn) {
+    if (isLoading) {
+      console.error("Loading pixels, please wait.");
+      return;
+    }
+
+    if (!isSignedIn || !user) {
       console.error("User must be signed in to place a pixel");
       return;
     }
 
     if (selectedPixel) {
+      // Optimistic update
+      const originalPixels = pixels;
       const newPixels = pixels.map((row, y) =>
         row.map((pixel, x) => {
           if (x === selectedPixel.x && y === selectedPixel.y) {
-            return { ...pixel, color: selectedColor };
+            return { ...pixel, color: selectedColor, placedBy: user.id }; // Optimistically set placedBy
           }
           return pixel;
         })
       );
       setPixels(newPixels);
 
-      // Update Supabase
-      const { error } = await client.from(PIXELS_TABLE).upsert(
-        {
-          x: selectedPixel.x,
-          y: selectedPixel.y,
-          r: selectedColor.r,
-          g: selectedColor.g,
-          b: selectedColor.b,
-          placed_by: user?.id,
-        },
-        { onConflict: "x,y" }
-      );
+      // Call server action
+      const result = await placePixelAction(selectedPixel, selectedColor);
 
-      if (error) {
-        console.error("Error updating pixel in Supabase:", error);
+      if (!result.success) {
+        console.error("Error updating pixel:", result.error);
+        // Revert optimistic update if server action fails
+        setPixels(originalPixels);
+        // Optionally, show an error message to the user
       }
     }
   };
