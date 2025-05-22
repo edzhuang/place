@@ -89,9 +89,9 @@ export default function RootLayout({
               </NavigationMenuList>
             </NavigationMenu>
 
-            <CanvasProvider>
-              <main>{children}</main>
-            </CanvasProvider>
+            <main>
+              <CanvasProvider>{children}</CanvasProvider>
+            </main>
           </ThemeProvider>
         </body>
       </html>

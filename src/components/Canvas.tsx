@@ -1,5 +1,3 @@
-"use client";
-
 import type React from "react";
 import type { Pixel, Coordinates } from "@/types/canvas";
 import {

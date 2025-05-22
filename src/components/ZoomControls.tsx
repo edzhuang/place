@@ -1,5 +1,3 @@
-"use client";
-
 import { Button } from "@/components/ui/Button";
 import { Plus, Minus } from "lucide-react";
 import { useCanvas } from "@/contexts/CanvasContext";

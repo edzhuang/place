@@ -1,5 +1,3 @@
-"use client";
-
 import { Palette } from "@/components/Palette";
 import { Button } from "@/components/ui/Button";
 import { useCanvas } from "@/contexts/CanvasContext";
