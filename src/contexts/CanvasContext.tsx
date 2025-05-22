@@ -10,6 +10,7 @@ import {
   ReactNode,
   useEffect,
   useMemo,
+  useRef,
 } from "react";
 import {
   COLORS,
@@ -38,7 +39,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { user, isSignedIn } = useUser();
   const { session } = useSession();
 
-  const [pixels, setPixels] = useState<Pixel[][]>([[]]);
+  const [pixels, setPixels] = useState<Pixel[][]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hoveredPixel, setHoveredPixel] = useState<Coordinates | null>(null);
   const [selectedPixel, setSelectedPixel] = useState<Coordinates | null>(null);
@@ -50,17 +51,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [lastPlacedTimestamp, setLastPlacedTimestamp] = useState<number | null>(
     null
   );
+  const initialFetchDone = useRef(false); // Add this ref
 
   // Effect to load initial lastPlacedTimestamp from user metadata
   useEffect(() => {
-    if (isSignedIn && user?.publicMetadata?.lastPlaced) {
+    if (user?.publicMetadata?.lastPlaced) {
       const lastPlaced = user.publicMetadata.lastPlaced as number;
       // Initialize with the server timestamp, ensuring it's not in the future relative to client's clock
       setLastPlacedTimestamp(Math.min(lastPlaced, Date.now()));
     } else {
       setLastPlacedTimestamp(null);
     }
-  }, [isSignedIn, user]); // Re-run when the user object changes
+  }, [user]); // Re-run when the user object changes
 
   const client = useMemo(() => {
     function createClerkSupabaseClient() {
@@ -93,6 +95,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const fetchInitialPixels = async () => {
       setIsLoading(true);
+
       const { data, error } = await client
         .from(PIXELS_TABLE)
         .select("x, y, r, g, b, placed_by");
@@ -130,8 +133,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
-    fetchInitialPixels();
-  }, [client]);
+    // Only fetch if client is available and initial fetch hasn't been done
+    if (client && !initialFetchDone.current) {
+      fetchInitialPixels();
+      initialFetchDone.current = true;
+    }
+  }, [client]); // Keep client as dependency to ensure it's initialized
 
   // Subscribe to real-time changes
   useEffect(() => {
