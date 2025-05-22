@@ -189,17 +189,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       )
-      .subscribe((status, err) => {
-        if (status === "SUBSCRIBED") {
-          console.log("Successfully subscribed to realtime pixel changes!");
-        }
-        if (status === "CHANNEL_ERROR") {
-          console.error(`Failed to subscribe: ${err?.message || JSON.stringify(err)}`);
-        }
-        if (status === "TIMED_OUT") {
-          console.error("Subscription timed out");
-        }
-      });
+      .subscribe();
 
     // Cleanup function to remove the channel subscription when the component unmounts
     return () => {
