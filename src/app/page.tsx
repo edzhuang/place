@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import clsx from "clsx";
 
 export default function HomePage() {
-  const { isLoading, selectedPixel, hoveredPixel, zoom } = useCanvas();
+  const { isLoading, selectedPixel, hoveredPixel } = useCanvas();
 
   return (
     <div className="flex flex-col h-screen justify-center items-center">
@@ -22,16 +22,11 @@ export default function HomePage() {
 
       {/* Top UI */}
       <div className="fixed top-22 inset-x-0 flex flex-col items-center">
-        <Badge variant="outline" className="bg-background gap-4">
-          {hoveredPixel ? (
-            <div>
-              ({hoveredPixel.x}, {hoveredPixel.y})
-            </div>
-          ) : (
-            <div>(0, 0)</div>
-          )}
-          <div>{Math.round(zoom * 10) / 10}x</div>
-        </Badge>
+        {hoveredPixel && (
+          <Badge variant="outline" className="bg-background gap-4">
+            ({hoveredPixel.x}, {hoveredPixel.y})
+          </Badge>
+        )}
       </div>
 
       {/* Bottom UI */}
