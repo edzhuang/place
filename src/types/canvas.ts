@@ -15,6 +15,7 @@ export type Coordinates = {
 };
 
 export interface CanvasContextState {
+  isSignedIn: boolean | undefined;
   pixels: Pixel[][];
   setPixels: React.Dispatch<React.SetStateAction<Pixel[][]>>;
   hoveredPixel: Coordinates | null;
@@ -33,4 +34,5 @@ export interface CanvasContextState {
   setDragStart: React.Dispatch<React.SetStateAction<Coordinates>>;
   placePixel: () => void;
   isLoading: boolean;
+  lastPlacedTimestamp: number | null;
 }

@@ -3,7 +3,10 @@
 import { Palette } from "@/components/Palette";
 import { Button } from "@/components/ui/Button";
 import { useCanvas } from "@/contexts/CanvasContext";
-import { SignInButton, useUser } from "@clerk/nextjs";
+import { SignInButton } from "@clerk/nextjs";
+import { delay } from "@/constants/canvas";
+import { useEffect, useState } from "react";
+import { Progress } from "@/components/ui/Progress";
 
 function DrawerOverlay({ children }: { children: React.ReactNode }) {
   return (
@@ -14,8 +17,31 @@ function DrawerOverlay({ children }: { children: React.ReactNode }) {
 }
 
 export function Drawer() {
-  const { setSelectedPixel, placePixel } = useCanvas();
-  const { isSignedIn } = useUser();
+  const { setSelectedPixel, placePixel, isSignedIn, lastPlacedTimestamp } =
+    useCanvas();
+  const [remainingTime, setRemainingTime] = useState(0);
+
+  useEffect(() => {
+    if (lastPlacedTimestamp) {
+      const intervalId = setInterval(() => {
+        const newRemainingTime = lastPlacedTimestamp + delay - Date.now();
+        if (newRemainingTime > 0) {
+          setRemainingTime(newRemainingTime);
+        } else {
+          setRemainingTime(0);
+          clearInterval(intervalId);
+        }
+      }, 100);
+
+      // Set initial remaining time
+      const initialRemainingTime = lastPlacedTimestamp + delay - Date.now();
+      setRemainingTime(initialRemainingTime > 0 ? initialRemainingTime : 0);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [lastPlacedTimestamp]);
+
+  const showCooldownOverlay = lastPlacedTimestamp && remainingTime > 0;
 
   return (
     <div className="relative w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
@@ -42,6 +68,17 @@ export function Drawer() {
               </div>
             </SignInButton>
             &nbsp;to place a pixel
+          </div>
+        </DrawerOverlay>
+      )}
+
+      {showCooldownOverlay && isSignedIn && (
+        <DrawerOverlay>
+          <div className="flex flex-col items-center text-center gap-4">
+            <Progress value={(remainingTime / delay) * 100} />
+            <div className="text-md">
+              Next pixel available in {Math.ceil(remainingTime / 1000)} seconds
+            </div>
           </div>
         </DrawerOverlay>
       )}

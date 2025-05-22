@@ -3,7 +3,6 @@ import { useCanvas } from "@/contexts/CanvasContext";
 import clsx from "clsx";
 
 export function Palette() {
-  // Use context values
   const { selectedColor, setSelectedColor } = useCanvas();
 
   return (

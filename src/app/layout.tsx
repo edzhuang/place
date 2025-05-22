@@ -64,7 +64,7 @@ export default function RootLayout({
                     src="/wordmark.svg"
                     width={772}
                     height={200}
-                    alt="Picture of the author"
+                    alt="Workmark"
                     className="w-auto h-6"
                     priority={true}
                   />

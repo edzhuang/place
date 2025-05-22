@@ -44,9 +44,23 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [selectedPixel, setSelectedPixel] = useState<Coordinates | null>(null);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [position, setPosition] = useState({ x: 0, y: 0 }); // Initialize with default values
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastPlacedTimestamp, setLastPlacedTimestamp] = useState<number | null>(
+    null
+  );
+
+  // Effect to load initial lastPlacedTimestamp from user metadata
+  useEffect(() => {
+    if (isSignedIn && user?.publicMetadata?.lastPlaced) {
+      const lastPlaced = user.publicMetadata.lastPlaced as number;
+      // Initialize with the server timestamp, ensuring it's not in the future relative to client's clock
+      setLastPlacedTimestamp(Math.min(lastPlaced, Date.now()));
+    } else {
+      setLastPlacedTimestamp(null);
+    }
+  }, [isSignedIn, user]); // Re-run when the user object changes
 
   const client = useMemo(() => {
     function createClerkSupabaseClient() {
@@ -64,19 +78,19 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return createClerkSupabaseClient();
   }, [session]);
 
+  // Effect to center the canvas on initial client-side render
+  useEffect(() => {
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const centeredX = (viewportWidth - DEFAULT_PIXEL_SIZE * CANVAS_WIDTH) / 2;
+    const centeredY = (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
+
+    setPosition({ x: centeredX, y: centeredY });
+  }, []); // Empty dependency array ensures this runs only once on mount
+
   // Fetch the initial pixels
   useEffect(() => {
-    const centerCanvas = () => {
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-
-      const centeredX = (viewportWidth - DEFAULT_PIXEL_SIZE * CANVAS_WIDTH) / 2;
-      const centeredY =
-        (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
-
-      setPosition({ x: centeredX, y: centeredY });
-    };
-
     const fetchInitialPixels = async () => {
       setIsLoading(true);
       const { data, error } = await client
@@ -116,7 +130,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     };
 
-    centerCanvas();
     fetchInitialPixels();
   }, [client]);
 
@@ -223,31 +236,32 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     }
 
     if (selectedPixel) {
-      // Optimistic update
       const originalPixels = pixels;
+      const originalTimestamp = lastPlacedTimestamp;
       const newPixels = pixels.map((row, y) =>
         row.map((pixel, x) => {
           if (x === selectedPixel.x && y === selectedPixel.y) {
-            return { ...pixel, color: selectedColor, placedBy: user.id }; // Optimistically set placedBy
+            return { ...pixel, color: selectedColor, placedBy: user.id };
           }
           return pixel;
         })
       );
       setPixels(newPixels);
+      setLastPlacedTimestamp(Date.now()); // Optimistically update the timestamp
 
       // Call server action
       const result = await placePixelAction(selectedPixel, selectedColor);
 
       if (!result.success) {
         console.error("Error updating pixel:", result.error);
-        // Revert optimistic update if server action fails
-        setPixels(originalPixels);
-        // Optionally, show an error message to the user
+        setPixels(originalPixels); // Revert optimistic pixel update
+        setLastPlacedTimestamp(originalTimestamp); // Revert optimistic timestamp
       }
     }
   };
 
   const contextValue = {
+    isSignedIn,
     pixels,
     setPixels,
     hoveredPixel,
@@ -266,6 +280,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     setDragStart,
     placePixel,
     isLoading,
+    lastPlacedTimestamp,
   };
 
   return (
