@@ -1,5 +1,5 @@
 export const PIXELS_TABLE = "pixels";
-export const cooldown = 10000;
+export const cooldown = 60000;
 
 // Default canvas size
 export const CANVAS_WIDTH = 100;
