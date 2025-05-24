@@ -4,46 +4,6 @@
 
 @variant dark (&:where(.dark, .dark *));
 
-@font-face {
-  font-family: Inter;
-  font-style: normal;
-  font-weight: 100 900;
-  font-display: swap;
-  src: url("/fonts/InterVariable.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "InterDisplay";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("/fonts/InterDisplay-Regular.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "InterDisplay";
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url("/fonts/InterDisplay-Medium.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "InterDisplay";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("/fonts/InterDisplay-SemiBold.woff2") format("woff2");
-}
-
-@font-face {
-  font-family: "InterDisplay";
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url("/fonts/InterDisplay-Bold.woff2") format("woff2");
-}
-
 @theme {
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
@@ -64,12 +24,10 @@
   --breakpoint-4xl: 100rem;
   --breakpoint-5xl: 112.5rem;
 
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-display: "InterDisplay", ui-sans-serif, system-ui, sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  --font-mono: "GeistMono", ui-monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji",
+    "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
 
   --radius-0: 0;
   --radius-0-25: 0.0625rem;

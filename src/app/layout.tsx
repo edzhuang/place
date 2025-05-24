@@ -38,6 +38,20 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Place",
   description: "Recreation of Reddit's r/place",
+  icons: [
+    {
+      rel: "icon",
+      type: "image/x-icon",
+      url: "/favicon-light.ico",
+      media: "(prefers-color-scheme: light)",
+    },
+    {
+      rel: "icon",
+      type: "image/png",
+      url: "/favicon-dark.ico",
+      media: "(prefers-color-scheme: dark)",
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -64,11 +78,11 @@ export default function RootLayout({
               <NavigationMenuList>
                 <Link href="/">
                   <Image
-                    src="/wordmark.svg"
-                    width={772}
-                    height={200}
+                    src="/logo-dark.png"
+                    width={1600}
+                    height={1600}
                     alt="Workmark"
-                    className="w-auto h-4"
+                    className="w-auto h-6"
                     priority={true}
                   />
                 </Link>
