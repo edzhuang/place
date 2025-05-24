@@ -20,6 +20,17 @@ import {
   NavigationMenuLink,
   navigationMenuTriggerStyle,
 } from "@/components/ui/NavigationMenu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/Dialog";
+import { Label } from "@/components/ui/Label";
+import { Input } from "@/components/ui/Input";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -87,14 +98,26 @@ export default function RootLayout({
                   />
                 </Link>
 
-                <NavigationMenuItem>
-                  <NavigationMenuLink
-                    className={navigationMenuTriggerStyle()}
-                    asChild
-                  >
-                    <Link href="/about">About</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <NavigationMenuItem>
+                      <NavigationMenuLink
+                        className={navigationMenuTriggerStyle()}
+                      >
+                        About
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>About</DialogTitle>
+                      <DialogDescription>
+                        Make changes to your profile here. Click save
+                        afterwards.
+                      </DialogDescription>
+                    </DialogHeader>
+                  </DialogContent>
+                </Dialog>
 
                 <NavigationMenuItem>
                   <NavigationMenuLink

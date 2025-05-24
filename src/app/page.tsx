@@ -15,10 +15,11 @@ export default function HomePage() {
   return (
     <div className="flex flex-col h-screen justify-center items-center">
       {/* Canvas */}
-      {isLoading && (
+      {isLoading ? (
         <LoaderCircle className="h-12 w-12 animate-spin text-muted-foreground" />
+      ) : (
+        <Canvas />
       )}
-      {!isLoading && <Canvas />}
 
       {/* Top UI */}
       <div className="fixed top-22 inset-x-0 flex flex-col items-center">

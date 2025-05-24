@@ -1,42 +1,49 @@
-import type React from "react";
-import type { Pixel, Coordinates } from "@/types/canvas";
+import React, { useRef, useState, useEffect, useCallback } from "react";
+import { useCanvas } from "../contexts/CanvasContext";
 import {
   DEFAULT_PIXEL_SIZE,
   DAMPING_FACTOR,
   MIN_VELOCITY_THRESHOLD,
   KEY_ACCELERATION,
   MAX_KEY_VELOCITY,
-} from "@/constants/canvas";
-import { useRef, useEffect, useCallback, useState } from "react";
-import { useCanvas } from "@/contexts/CanvasContext";
+} from "../constants/canvas";
+import { Coordinates, Pixel } from "../types/canvas";
+import { calculateGridCoordinates, isPixelInBounds } from "../utils/canvas"; // Assuming these utils exist
 
-// Utility function to check if a pixel is within bounds
-const isPixelInBounds = (gridX: number, gridY: number, pixels: Pixel[][]) => {
-  return (
-    pixels.length > 0 &&
-    pixels[0] &&
-    pixels[0].length > 0 &&
-    gridY >= 0 &&
-    gridY < pixels.length &&
-    gridX >= 0 &&
-    gridX < pixels[gridY].length
-  );
-};
+// Helper function to clamp position (remains outside)
+const clampPosition = (
+  pos: Coordinates,
+  zoom: number,
+  pixelsData: Pixel[][] | null,
+  canvasElement: HTMLCanvasElement | null,
+  defaultPixelSize: number
+): Coordinates => {
+  if (
+    !canvasElement ||
+    !pixelsData ||
+    pixelsData.length === 0 ||
+    !pixelsData[0] ||
+    pixelsData[0].length === 0
+  ) {
+    return pos;
+  }
+  const viewportWidth = canvasElement.width;
+  const viewportHeight = canvasElement.height;
+  const gridWidth = pixelsData[0].length;
+  const gridHeight = pixelsData.length;
+  const effectivePixelSize = defaultPixelSize * zoom;
+  const contentWidth = gridWidth * effectivePixelSize;
+  const contentHeight = gridHeight * effectivePixelSize;
 
-// Utility function to calculate grid coordinates from client coordinates
-const calculateGridCoordinates = (
-  clientX: number,
-  clientY: number,
-  rect: DOMRect,
-  position: Coordinates,
-  zoom: number
-) => {
-  const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-  const clickX = clientX - rect.left;
-  const clickY = clientY - rect.top;
-  const gridX = Math.floor((clickX - position.x) / effectivePixelSize);
-  const gridY = Math.floor((clickY - position.y) / effectivePixelSize);
-  return { gridX, gridY };
+  let clampedX = pos.x;
+  let clampedY = pos.y;
+
+  clampedX = Math.min(clampedX, viewportWidth / 2);
+  clampedX = Math.max(clampedX, viewportWidth / 2 - contentWidth);
+  clampedY = Math.min(clampedY, viewportHeight / 2);
+  clampedY = Math.max(clampedY, viewportHeight / 2 - contentHeight);
+
+  return { x: clampedX, y: clampedY };
 };
 
 export function Canvas() {
@@ -45,40 +52,31 @@ export function Canvas() {
     clientX: number;
     clientY: number;
   } | null>(null);
-
-  // Refs for momentum
   const lastMousePositionRef = useRef<Coordinates | null>(null);
   const velocityRef = useRef<Coordinates>({ x: 0, y: 0 });
   const animationFrameRef = useRef<number | null>(null);
-  // Ref for tracking pressed keys
   const keysPressedRef = useRef({
     ArrowUp: false,
     ArrowDown: false,
     ArrowLeft: false,
     ArrowRight: false,
   });
-  // Refs for touch/pinch support
   const lastTouchDistanceRef = useRef<number | null>(null);
   const touchCenterRef = useRef<Coordinates | null>(null);
   const isPinchGestureRef = useRef<boolean>(false);
-  // Refs for mobile panning
   const lastTouchPositionRef = useRef<Coordinates | null>(null);
   const touchStartPositionRef = useRef<Coordinates | null>(null);
   const isTouchDraggingRef = useRef<boolean>(false);
   const [mouseEventArgsForHover, setMouseEventArgsForHover] = useState<{
     clientX: number;
     clientY: number;
-  } | null>(null); // ADDED state for passing mouse events to OverlayCanvas
+  } | null>(null);
   const [selectedPixelUser, setSelectedPixelUser] = useState<string | null>(
     null
-  ); // ADDED state for selected pixel's user
-
-  // Ref for the off-screen canvas used for rendering the pixel grid
+  );
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  // Ref for the requestAnimationFrame drawing loop
   const animationFrameDrawRef = useRef<number | null>(null);
 
-  // Use context values
   const {
     pixels,
     hoveredPixel,
@@ -94,6 +92,55 @@ export function Canvas() {
     dragStart,
     setDragStart,
   } = useCanvas();
+
+  // Refs for stable access to state/props in callbacks
+  const zoomRef = useRef(zoom);
+  const pixelsRef = useRef(pixels);
+
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    pixelsRef.current = pixels;
+  }, [pixels]);
+
+  // Stable wrapper for setPosition that applies clamping
+  const setClampedPosition = useCallback(
+    (
+      newPosValueOrFn: Coordinates | ((prevPos: Coordinates) => Coordinates)
+    ) => {
+      setPosition((currentActualPosition) => {
+        const newUnclampedPos =
+          typeof newPosValueOrFn === "function"
+            ? newPosValueOrFn(currentActualPosition)
+            : newPosValueOrFn;
+        return clampPosition(
+          newUnclampedPos,
+          zoomRef.current, // Use ref for current zoom
+          pixelsRef.current, // Use ref for current pixels
+          canvasRef.current, // Directly use canvasRef.current
+          DEFAULT_PIXEL_SIZE
+        );
+      });
+    },
+    [setPosition] // Depends only on the stable setPosition from context
+  );
+
+  // Global clamping effect: Re-clamp if position, zoom, or pixels change
+  useEffect(() => {
+    const clamped = clampPosition(
+      position, // Current position from state
+      zoom, // Current zoom from state
+      pixels, // Current pixels from state
+      canvasRef.current,
+      DEFAULT_PIXEL_SIZE
+    );
+    // Only update if the clamped position is different, to avoid infinite loops
+    if (clamped.x !== position.x || clamped.y !== position.y) {
+      setPosition(clamped); // Use original setPosition from context
+    }
+  }, [position, zoom, pixels, setPosition, canvasRef]); // DEFAULT_PIXEL_SIZE is a constant
 
   // Utility function to stop animations and reset states
   const stopAndResetAnimations = useCallback(() => {
@@ -495,13 +542,11 @@ export function Canvas() {
         isActivelyKeyScrolling = true;
       }
 
-      // If not actively moving with keys, apply damping for momentum
       if (!isActivelyKeyScrolling) {
         velX *= DAMPING_FACTOR;
         velY *= DAMPING_FACTOR;
       }
 
-      // Stop animation if velocity is below threshold AND no keys are pressed
       if (
         !isActivelyKeyScrolling &&
         Math.abs(velX) < MIN_VELOCITY_THRESHOLD &&
@@ -515,7 +560,7 @@ export function Canvas() {
         return;
       }
 
-      setPosition((prevPos) => ({
+      setClampedPosition((prevPos) => ({
         x: prevPos.x + velX,
         y: prevPos.y + velY,
       }));
@@ -524,8 +569,25 @@ export function Canvas() {
       animationFrameRef.current = requestAnimationFrame(animate);
     };
 
-    animationFrameRef.current = requestAnimationFrame(animate);
-  }, [setPosition]);
+    // Ensure velocity is not zero if starting momentum, otherwise it might stop immediately.
+    // This check might be too aggressive if a very small flick is intended.
+    // Consider if MIN_VELOCITY_THRESHOLD handles this sufficiently.
+    if (
+      Math.abs(velocityRef.current.x) >= MIN_VELOCITY_THRESHOLD ||
+      Math.abs(velocityRef.current.y) >= MIN_VELOCITY_THRESHOLD ||
+      keysPressedRef.current.ArrowUp ||
+      keysPressedRef.current.ArrowDown || // also start if keys are initiating
+      keysPressedRef.current.ArrowLeft ||
+      keysPressedRef.current.ArrowRight
+    ) {
+      animationFrameRef.current = requestAnimationFrame(animate);
+    } else {
+      // If velocity is already below threshold and no keys, ensure it's zeroed.
+      velocityRef.current = { x: 0, y: 0 };
+    }
+  }, [
+    setClampedPosition /*, DAMPING_FACTOR, MIN_VELOCITY_THRESHOLD, etc. are constants */,
+  ]);
 
   // NEW: useEffect for keyboard controls (keydown and keyup)
   useEffect(() => {
@@ -610,7 +672,11 @@ export function Canvas() {
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
       // Update position based on the new drag start
-      setPosition({
+      // setPosition({
+      //   x: e.clientX - newDragStartX,
+      //   y: e.clientY - newDragStartY,
+      // });
+      setClampedPosition({
         x: e.clientX - newDragStartX,
         y: e.clientY - newDragStartY,
       });
@@ -626,7 +692,11 @@ export function Canvas() {
       }
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
-      setPosition({
+      // setPosition({
+      //   x: e.clientX - dragStart.x,
+      //   y: e.clientY - dragStart.y,
+      // });
+      setClampedPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
       });
@@ -817,29 +887,37 @@ export function Canvas() {
       // Single finger panning
       const touch = e.touches[0];
       const currentTouchPosition = { x: touch.clientX, y: touch.clientY };
+      const lastPos = lastTouchPositionRef.current; // Ensure lastPos is not null before use
 
-      // Check if we've moved enough to start dragging (prevents accidental panning on taps)
-      const dragThreshold = 5; // pixels
-      const dragDistance = Math.sqrt(
-        Math.pow(currentTouchPosition.x - touchStartPositionRef.current.x, 2) +
-          Math.pow(currentTouchPosition.y - touchStartPositionRef.current.y, 2)
-      );
+      if (lastPos) {
+        const deltaX = currentTouchPosition.x - lastPos.x;
+        const deltaY = currentTouchPosition.y - lastPos.y;
 
-      if (dragDistance > dragThreshold || isTouchDraggingRef.current) {
-        isTouchDraggingRef.current = true;
-
-        // Calculate velocity for momentum
-        const deltaX = currentTouchPosition.x - lastTouchPositionRef.current.x;
-        const deltaY = currentTouchPosition.y - lastTouchPositionRef.current.y;
-        velocityRef.current = { x: deltaX, y: deltaY };
-
-        // Update position
-        setPosition((prevPos) => ({
+        // If setPosition was called here, it should be replaced by setClampedPosition
+        // Example:
+        // setPosition((prevPos) => ({
+        //   x: prevPos.x + deltaX,
+        //   y: prevPos.y + deltaY,
+        // }));
+        setClampedPosition((prevPos) => ({
           x: prevPos.x + deltaX,
           y: prevPos.y + deltaY,
         }));
 
+        // Update last touch position for next move event
         lastTouchPositionRef.current = currentTouchPosition;
+
+        // Determine if dragging started (optional, based on original logic)
+        if (!isTouchDraggingRef.current) {
+          const distMoved = Math.sqrt(
+            Math.pow(touch.clientX - touchStartPositionRef.current!.x, 2) +
+              Math.pow(touch.clientY - touchStartPositionRef.current!.y, 2)
+          );
+          if (distMoved > 5) {
+            // Threshold to start dragging
+            isTouchDraggingRef.current = true;
+          }
+        }
       }
     }
   };
