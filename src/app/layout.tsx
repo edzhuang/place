@@ -76,13 +76,13 @@ export default function RootLayout({
           >
             <NavigationMenu>
               <NavigationMenuList>
-                <Link href="/">
+                <Link href="/" className="mr-3">
                   <Image
                     src="/logo-dark.png"
                     width={1600}
                     height={1600}
                     alt="Workmark"
-                    className="w-auto h-6"
+                    className="w-auto h-8"
                     priority={true}
                   />
                 </Link>

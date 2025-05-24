@@ -30,14 +30,14 @@
     "Liberation Mono", "Courier New", monospace;
 
   --radius-0: 0;
-  --radius-0-25: 0.0625rem;
-  --radius-0-5: 0.125rem;
+  --radius-0\.25: 0.0625rem;
+  --radius-0\.5: 0.125rem;
   --radius-1: 0.25rem;
-  --radius-1-5: 0.375rem;
+  --radius-1\.5: 0.375rem;
   --radius-2: 0.5rem;
-  --radius-2-5: 0.625rem;
+  --radius-2\.5: 0.625rem;
   --radius-3: 0.75rem;
-  --radius-3-5: 0.875rem;
+  --radius-3\.5: 0.875rem;
   --radius-4: 1rem;
   --radius-5: 1.25rem;
   --radius-6: 1.5rem;
