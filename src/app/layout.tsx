@@ -82,7 +82,7 @@ export default function RootLayout({
                     width={1600}
                     height={1600}
                     alt="Workmark"
-                    className="w-auto h-8"
+                    className="h-8 w-auto"
                     priority={true}
                   />
                 </Link>
