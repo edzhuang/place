@@ -24,13 +24,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/Dialog";
-import { Label } from "@/components/ui/Label";
-import { Input } from "@/components/ui/Input";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
@@ -103,7 +100,7 @@ export default function RootLayout({
 
                 <Dialog>
                   <DialogTrigger asChild>
-                    <NavigationMenuItem>
+                    <NavigationMenuItem className="cursor-pointer">
                       <NavigationMenuLink
                         className={navigationMenuTriggerStyle()}
                       >
