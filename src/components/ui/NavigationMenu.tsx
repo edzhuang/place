@@ -15,12 +15,14 @@ function NavigationMenu({
   return (
     <NavigationMenuPrimitive.Root
       className={cn(
-        "fixed z-10 w-full flex-1 flex items-center justify-between border-b bg-background/90 backdrop-blur-lg px-8 h-16",
+        "fixed z-10 w-full flex-1 flex justify-center border-b bg-background/90 backdrop-blur-lg h-16",
         className
       )}
       {...props}
     >
-      {children}
+      <div className="flex items-center justify-between w-full max-w-5xl px-8">
+        {children}
+      </div>
       <NavigationMenuViewport
         className={cn(
           "data-[state=open]:fade-in-0",
