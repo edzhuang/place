@@ -45,7 +45,7 @@ export function Drawer() {
   return (
     <div className="relative w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
       <Palette />
-      <div className="flex flex-row gap-1">
+      <div className="flex flex-row gap-2">
         <Button
           variant="outline"
           size="md"
