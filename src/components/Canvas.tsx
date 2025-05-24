@@ -60,6 +60,11 @@ export function Canvas() {
   // Refs for touch/pinch support
   const lastTouchDistanceRef = useRef<number | null>(null);
   const touchCenterRef = useRef<Coordinates | null>(null);
+  const isPinchGestureRef = useRef<boolean>(false);
+  // Refs for mobile panning
+  const lastTouchPositionRef = useRef<Coordinates | null>(null);
+  const touchStartPositionRef = useRef<Coordinates | null>(null);
+  const isTouchDraggingRef = useRef<boolean>(false);
   const [mouseEventArgsForHover, setMouseEventArgsForHover] = useState<{
     clientX: number;
     clientY: number;
@@ -415,6 +420,40 @@ export function Canvas() {
     };
   }, []);
 
+  // Effect to add comprehensive touch event prevention at document level
+  useEffect(() => {
+    const preventDefaultTouch = (e: TouchEvent) => {
+      // Prevent default behaviors for touch events that bubble up
+      e.preventDefault();
+    };
+
+    const preventDefaultWheel = (e: WheelEvent) => {
+      // Prevent default zoom/scroll behaviors for wheel events
+      if (e.ctrlKey || Math.abs(e.deltaY) > 50) {
+        e.preventDefault();
+      }
+    };
+
+    // Add passive: false to ensure preventDefault works
+    document.addEventListener("touchstart", preventDefaultTouch, {
+      passive: false,
+    });
+    document.addEventListener("touchmove", preventDefaultTouch, {
+      passive: false,
+    });
+    document.addEventListener("touchend", preventDefaultTouch, {
+      passive: false,
+    });
+    document.addEventListener("wheel", preventDefaultWheel, { passive: false });
+
+    return () => {
+      document.removeEventListener("touchstart", preventDefaultTouch);
+      document.removeEventListener("touchmove", preventDefaultTouch);
+      document.removeEventListener("touchend", preventDefaultTouch);
+      document.removeEventListener("wheel", preventDefaultWheel);
+    };
+  }, []);
+
   // Resize canvas when window resizes
   useEffect(() => {
     const handleResize = () => {
@@ -696,14 +735,17 @@ export function Canvas() {
     adjustZoom(multFactor, { x: mouseX, y: mouseY });
   };
 
-  // NEW: Handle touch events for pinch-to-zoom
+  // NEW: Handle touch events for pinch-to-zoom and panning
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent all default touch behaviors
     setMouseEventArgsForHover(null); // Clear hover on touch start
 
     if (e.touches.length === 2) {
       // Pinch gesture
       stopAndResetAnimations();
       setIsDragging(false);
+      isTouchDraggingRef.current = false;
+      isPinchGestureRef.current = true; // Mark that we're in a pinch gesture
 
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
@@ -718,16 +760,32 @@ export function Canvas() {
 
       lastTouchDistanceRef.current = distance;
       touchCenterRef.current = { x: centerX, y: centerY };
+    } else if (e.touches.length === 1) {
+      // Single touch - prepare for panning only if not coming from a pinch
+      if (!isPinchGestureRef.current) {
+        stopAndResetAnimations();
+
+        const touch = e.touches[0];
+        touchStartPositionRef.current = { x: touch.clientX, y: touch.clientY };
+        lastTouchPositionRef.current = { x: touch.clientX, y: touch.clientY };
+        isTouchDraggingRef.current = false;
+      }
+
+      // Reset pinch state
+      lastTouchDistanceRef.current = null;
+      touchCenterRef.current = null;
     }
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent ALL default touch behaviors (scrolling, zooming, etc.)
+
     if (
       e.touches.length === 2 &&
       lastTouchDistanceRef.current &&
       touchCenterRef.current
     ) {
-      e.preventDefault(); // Prevent default pinch behavior
+      // Pinch-to-zoom for two fingers
 
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
@@ -752,14 +810,103 @@ export function Canvas() {
 
       lastTouchDistanceRef.current = distance;
       touchCenterRef.current = { x: centerX, y: centerY };
+    } else if (
+      e.touches.length === 1 &&
+      !isPinchGestureRef.current && // Only allow single finger panning if not in/from a pinch
+      lastTouchPositionRef.current &&
+      touchStartPositionRef.current
+    ) {
+      // Single finger panning
+      const touch = e.touches[0];
+      const currentTouchPosition = { x: touch.clientX, y: touch.clientY };
+
+      // Check if we've moved enough to start dragging (prevents accidental panning on taps)
+      const dragThreshold = 5; // pixels
+      const dragDistance = Math.sqrt(
+        Math.pow(currentTouchPosition.x - touchStartPositionRef.current.x, 2) +
+          Math.pow(currentTouchPosition.y - touchStartPositionRef.current.y, 2)
+      );
+
+      if (dragDistance > dragThreshold || isTouchDraggingRef.current) {
+        isTouchDraggingRef.current = true;
+
+        // Calculate velocity for momentum
+        const deltaX = currentTouchPosition.x - lastTouchPositionRef.current.x;
+        const deltaY = currentTouchPosition.y - lastTouchPositionRef.current.y;
+        velocityRef.current = { x: deltaX, y: deltaY };
+
+        // Update position
+        setPosition((prevPos) => ({
+          x: prevPos.x + deltaX,
+          y: prevPos.y + deltaY,
+        }));
+
+        lastTouchPositionRef.current = currentTouchPosition;
+      }
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault(); // Prevent default touch behaviors on touch end
+
     if (e.touches.length < 2) {
-      // Reset touch state when pinch ends
+      // Reset pinch state when pinch ends
       lastTouchDistanceRef.current = null;
       touchCenterRef.current = null;
+    }
+
+    if (e.touches.length === 0) {
+      // All touches ended
+      const wasPinchGesture = isPinchGestureRef.current;
+
+      // Reset velocity if we were in a pinch gesture to prevent slingshot
+      if (wasPinchGesture) {
+        velocityRef.current = { x: 0, y: 0 };
+      }
+
+      if (isTouchDraggingRef.current && !wasPinchGesture) {
+        // Was dragging and not from a pinch, trigger momentum if velocity is sufficient
+        if (
+          Math.abs(velocityRef.current.x) > MIN_VELOCITY_THRESHOLD ||
+          Math.abs(velocityRef.current.y) > MIN_VELOCITY_THRESHOLD
+        ) {
+          startMomentumScroll();
+        }
+      } else if (touchStartPositionRef.current && !wasPinchGesture) {
+        // Was a tap, not a drag - handle pixel selection
+        const canvas = canvasRef.current;
+        const rect = canvas?.getBoundingClientRect();
+        if (rect && pixels.length > 0 && pixels[0] && pixels[0].length > 0) {
+          const { gridX, gridY } = calculateGridCoordinates(
+            touchStartPositionRef.current.x,
+            touchStartPositionRef.current.y,
+            rect,
+            position,
+            zoom
+          );
+
+          if (isPixelInBounds(gridX, gridY, pixels)) {
+            // If tapping the same selected pixel, deselect it. Otherwise, select the new one.
+            if (
+              selectedPixel &&
+              selectedPixel.x === gridX &&
+              selectedPixel.y === gridY
+            ) {
+              setSelectedPixel(null); // Deselect
+            } else {
+              setSelectedPixel({ x: gridX, y: gridY }); // Select new
+            }
+          } else {
+            setSelectedPixel(null); // Tapped outside grid, deselect
+          }
+        }
+      }
+
+      // Reset touch state
+      lastTouchPositionRef.current = null;
+      touchStartPositionRef.current = null;
+      isTouchDraggingRef.current = false;
+      isPinchGestureRef.current = false; // Reset pinch gesture flag
     }
   };
 
@@ -769,6 +916,15 @@ export function Canvas() {
       className={`fixed inset-0 ${
         isDragging ? "cursor-grabbing" : "cursor-crosshair"
       } pointer-events-auto`}
+      style={{
+        touchAction: "none", // Disable all touch gestures (panning, zooming, etc.)
+        WebkitUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
+        userSelect: "none",
+        WebkitTouchCallout: "none", // Disable callout on iOS
+        WebkitTapHighlightColor: "transparent", // Disable tap highlight
+      }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
