@@ -57,6 +57,9 @@ export function Canvas() {
     ArrowLeft: false,
     ArrowRight: false,
   });
+  // Refs for touch/pinch support
+  const lastTouchDistanceRef = useRef<number | null>(null);
+  const touchCenterRef = useRef<Coordinates | null>(null);
   const [mouseEventArgsForHover, setMouseEventArgsForHover] = useState<{
     clientX: number;
     clientY: number;
@@ -393,6 +396,25 @@ export function Canvas() {
     };
   }, []);
 
+  // Effect to add native wheel event listener to prevent browser zoom
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleWheelNative = (e: WheelEvent) => {
+      // Check if the event is a zoom gesture (typically has ctrlKey on macOS)
+      if (e.ctrlKey || Math.abs(e.deltaY) > 50) {
+        e.preventDefault();
+      }
+    };
+
+    canvas.addEventListener("wheel", handleWheelNative, { passive: false });
+
+    return () => {
+      canvas.removeEventListener("wheel", handleWheelNative);
+    };
+  }, []);
+
   // Resize canvas when window resizes
   useEffect(() => {
     const handleResize = () => {
@@ -647,12 +669,23 @@ export function Canvas() {
 
   // MODIFIED: Handle wheel event for zooming
   const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault(); // Prevent default browser zoom behavior
+
     setMouseEventArgsForHover(null); // Clear hover on wheel event
     setIsDragging(false);
 
     stopAndResetAnimations(); // Use the utility function
 
-    const multFactor = e.deltaY > 0 ? 0.9 : 1.1;
+    // More responsive zoom based on deltaY magnitude
+    // Normalize deltaY and apply sensitivity scaling
+    const sensitivity = 0.01; // Adjust this value to fine-tune responsiveness
+    const zoomDelta = -e.deltaY * sensitivity; // Negative because positive deltaY means zoom out
+
+    // Clamp the zoom delta to prevent extreme jumps
+    const clampedDelta = Math.max(-0.5, Math.min(0.5, zoomDelta));
+
+    // Convert to multiplication factor (1 = no change, >1 = zoom in, <1 = zoom out)
+    const multFactor = 1 + clampedDelta;
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
@@ -661,6 +694,73 @@ export function Canvas() {
     const mouseY = e.clientY - rect.top;
 
     adjustZoom(multFactor, { x: mouseX, y: mouseY });
+  };
+
+  // NEW: Handle touch events for pinch-to-zoom
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setMouseEventArgsForHover(null); // Clear hover on touch start
+
+    if (e.touches.length === 2) {
+      // Pinch gesture
+      stopAndResetAnimations();
+      setIsDragging(false);
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+
+      const distance = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+      lastTouchDistanceRef.current = distance;
+      touchCenterRef.current = { x: centerX, y: centerY };
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (
+      e.touches.length === 2 &&
+      lastTouchDistanceRef.current &&
+      touchCenterRef.current
+    ) {
+      e.preventDefault(); // Prevent default pinch behavior
+
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+
+      const distance = Math.sqrt(
+        Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+      );
+
+      const centerX = (touch1.clientX + touch2.clientX) / 2;
+      const centerY = (touch1.clientY + touch2.clientY) / 2;
+
+      const scale = distance / lastTouchDistanceRef.current;
+      const rect = canvasRef.current?.getBoundingClientRect();
+
+      if (rect) {
+        const touchX = centerX - rect.left;
+        const touchY = centerY - rect.top;
+
+        adjustZoom(scale, { x: touchX, y: touchY });
+      }
+
+      lastTouchDistanceRef.current = distance;
+      touchCenterRef.current = { x: centerX, y: centerY };
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (e.touches.length < 2) {
+      // Reset touch state when pinch ends
+      lastTouchDistanceRef.current = null;
+      touchCenterRef.current = null;
+    }
   };
 
   return (
@@ -674,6 +774,9 @@ export function Canvas() {
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
       onWheel={handleWheel}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
     />
   );
 }

@@ -11,7 +11,7 @@ export function ZoomControls() {
         variant="outline"
         size="md"
         subject="icon"
-        onClick={() => adjustZoom(1.1)}
+        onClick={() => adjustZoom(1.2)}
         className="pointer-events-auto"
       >
         <Plus />
@@ -20,7 +20,7 @@ export function ZoomControls() {
         variant="outline"
         size="md"
         subject="icon"
-        onClick={() => adjustZoom(0.9)}
+        onClick={() => adjustZoom(0.8)}
         className="pointer-events-auto"
       >
         <Minus />
