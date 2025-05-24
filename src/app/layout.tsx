@@ -22,8 +22,9 @@ import {
 } from "@/components/ui/NavigationMenu";
 import {
   Dialog,
-  DialogContent,
+  DialogBody,
   DialogDescription,
+  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -84,8 +85,8 @@ export default function RootLayout({
           >
             <NavigationMenu>
               <NavigationMenuList>
-                <Link href="/">
-                  <div className="flex items-center gap-2 px-2">
+                <Link href="/" className="mr-2">
+                  <div className="flex items-center gap-2">
                     <Image
                       src="/logo-dark.png"
                       width={1600}
@@ -112,10 +113,30 @@ export default function RootLayout({
                     <DialogHeader>
                       <DialogTitle>About</DialogTitle>
                       <DialogDescription>
-                        Make changes to your profile here. Click save
-                        afterwards.
+                        Learn about this project
                       </DialogDescription>
                     </DialogHeader>
+                    <DialogBody className="flex flex-col gap-y-3">
+                      <p>
+                        This is a recreation of Reddit&apos;s{" "}
+                        <Link
+                          className="text-muted-foreground hover:text-foreground hover:[&>code]:text-foreground underline underline-offset-[5px] transition-colors"
+                          href="https://en.wikipedia.org/wiki/R%2Fplace"
+                        >
+                          r/place
+                        </Link>{" "}
+                        - a collaborative digital canvas where users can place
+                        colored pixels to create art together.
+                      </p>
+                      <p>
+                        You must be signed in to place pixels. After placing a
+                        pixel, there is a cooldown period of one minute.
+                      </p>
+                      <p>
+                        Built with Next.js, TypeScript, Clerk, and Supabase for
+                        real-time collaboration.
+                      </p>
+                    </DialogBody>
                   </DialogContent>
                 </Dialog>
 
@@ -132,7 +153,7 @@ export default function RootLayout({
               <NavigationMenuList>
                 <SignedOut>
                   <SignInButton>
-                    <Button size="sm" variant="outline">
+                    <Button size="sm" variant="ghost">
                       Sign in
                     </Button>
                   </SignInButton>

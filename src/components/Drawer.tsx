@@ -62,7 +62,7 @@ export function Drawer() {
         <DrawerOverlay>
           <div className="flex items-center">
             <SignInButton>
-              <div className="text-muted-foreground hover:text-foreground hover:[&>code]:text-foreground underline underline-offset-[5px] transition-colors cursor-pointer font-bold">
+              <div className="text-muted-foreground hover:text-foreground hover:[&>code]:text-foreground underline underline-offset-[5px] transition-colors cursor-pointer">
                 Sign in
               </div>
             </SignInButton>
