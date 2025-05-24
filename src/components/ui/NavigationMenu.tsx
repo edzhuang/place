@@ -20,7 +20,7 @@ function NavigationMenu({
       )}
       {...props}
     >
-      <div className="flex items-center justify-between w-full max-w-5xl px-8">
+      <div className="flex items-center justify-between max-w-5xl w-full px-6">
         {children}
       </div>
       <NavigationMenuViewport

@@ -465,37 +465,60 @@ export function Canvas() {
     };
   }, []);
 
-  // Effect to add comprehensive touch event prevention at document level
+  // Effect to add canvas-specific touch event prevention
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    let touchStartedOnCanvas = false;
+
     const preventDefaultTouch = (e: TouchEvent) => {
-      // Prevent default behaviors for touch events that bubble up
-      e.preventDefault();
+      const touch = e.touches[0] || e.changedTouches[0];
+      if (!touch) return;
+
+      if (e.type === "touchstart") {
+        // Check if touch started on canvas
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        touchStartedOnCanvas = element === canvas || canvas.contains(element);
+        if (touchStartedOnCanvas) {
+          e.preventDefault();
+        }
+      } else if (e.type === "touchmove" || e.type === "touchend") {
+        // Only prevent if touch started on canvas
+        if (touchStartedOnCanvas) {
+          e.preventDefault();
+        }
+        // Reset flag on touchend
+        if (e.type === "touchend") {
+          touchStartedOnCanvas = false;
+        }
+      }
     };
 
     const preventDefaultWheel = (e: WheelEvent) => {
-      // Prevent default zoom/scroll behaviors for wheel events
+      // Prevent default zoom/scroll behaviors for wheel events on canvas
       if (e.ctrlKey || Math.abs(e.deltaY) > 50) {
         e.preventDefault();
       }
     };
 
-    // Add passive: false to ensure preventDefault works
-    document.addEventListener("touchstart", preventDefaultTouch, {
+    // Add canvas-specific touch event listeners
+    canvas.addEventListener("touchstart", preventDefaultTouch, {
       passive: false,
     });
-    document.addEventListener("touchmove", preventDefaultTouch, {
+    canvas.addEventListener("touchmove", preventDefaultTouch, {
       passive: false,
     });
-    document.addEventListener("touchend", preventDefaultTouch, {
+    canvas.addEventListener("touchend", preventDefaultTouch, {
       passive: false,
     });
-    document.addEventListener("wheel", preventDefaultWheel, { passive: false });
+    canvas.addEventListener("wheel", preventDefaultWheel, { passive: false });
 
     return () => {
-      document.removeEventListener("touchstart", preventDefaultTouch);
-      document.removeEventListener("touchmove", preventDefaultTouch);
-      document.removeEventListener("touchend", preventDefaultTouch);
-      document.removeEventListener("wheel", preventDefaultWheel);
+      canvas.removeEventListener("touchstart", preventDefaultTouch);
+      canvas.removeEventListener("touchmove", preventDefaultTouch);
+      canvas.removeEventListener("touchend", preventDefaultTouch);
+      canvas.removeEventListener("wheel", preventDefaultWheel);
     };
   }, []);
 
