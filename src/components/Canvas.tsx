@@ -295,10 +295,9 @@ export function Canvas() {
       const { x: gridX, y: gridY } = hoveredPixel;
 
       // No need for an additional check here as isPixelInBounds already covers it
-      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-      const drawSize = Math.round(effectivePixelSize);
-      const outlineX = Math.round(gridX * effectivePixelSize + position.x);
-      const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+      const drawSize = DEFAULT_PIXEL_SIZE * zoom;
+      const outlineX = gridX * drawSize + position.x;
+      const outlineY = gridY * drawSize + position.y;
 
       ctx.strokeStyle = "gray";
       ctx.lineWidth = 1;
@@ -313,10 +312,9 @@ export function Canvas() {
       const { x: gridX, y: gridY } = selectedPixel;
 
       // No need for an additional check here as isPixelInBounds already covers it
-      const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
-      const drawSize = Math.ceil(effectivePixelSize); // Use Math.ceil for selection for better visibility
-      const outlineX = Math.round(gridX * effectivePixelSize + position.x);
-      const outlineY = Math.round(gridY * effectivePixelSize + position.y);
+      const drawSize = DEFAULT_PIXEL_SIZE * zoom;
+      const outlineX = gridX * drawSize + position.x;
+      const outlineY = gridY * drawSize + position.y;
 
       ctx.strokeStyle = "black";
       ctx.lineWidth = 2;
@@ -327,11 +325,11 @@ export function Canvas() {
         const FONT_SIZE = 14; // Using the user's preferred font size
         const PADDING_X = 12;
         const PADDING_Y = 8;
-        ctx.font = `${FONT_SIZE}px Geist`;
+        ctx.font = `500 ${FONT_SIZE}px Geist`; // Added font weight
         ctx.textAlign = "center";
         const text = `Placed by ${selectedPixelUser}`;
         const textX = outlineX + drawSize / 2;
-        const textY = outlineY - 18; // Adjusted to center the text better
+        const textY = outlineY - 18;
 
         const textMetrics = ctx.measureText(text);
         const textWidth = textMetrics.width;
