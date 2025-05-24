@@ -16,6 +16,9 @@ import { ThemeProvider } from "next-themes";
 import {
   NavigationMenu,
   NavigationMenuList,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  navigationMenuTriggerStyle,
 } from "@/components/ui/NavigationMenu";
 import Image from "next/image";
 import Link from "next/link";
@@ -59,17 +62,36 @@ export default function RootLayout({
           >
             <NavigationMenu>
               <NavigationMenuList>
-                <Link href="/" className="p-2">
+                <Link href="/">
                   <Image
                     src="/wordmark.svg"
                     width={772}
                     height={200}
                     alt="Workmark"
-                    className="w-auto h-6"
+                    className="w-auto h-4"
                     priority={true}
                   />
                 </Link>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    className={navigationMenuTriggerStyle()}
+                    asChild
+                  >
+                    <Link href="/about">About</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+
+                <NavigationMenuItem>
+                  <NavigationMenuLink
+                    className={navigationMenuTriggerStyle()}
+                    asChild
+                  >
+                    <Link href="https://github.com/edzhuang/place">GitHub</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
               </NavigationMenuList>
+
               <NavigationMenuList>
                 <SignedOut>
                   <SignInButton>
