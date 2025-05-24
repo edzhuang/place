@@ -1,4 +1,5 @@
 import { Coordinates, Pixel } from "../types/canvas";
+import { DEFAULT_PIXEL_SIZE } from "../constants/canvas";
 
 export const calculateGridCoordinates = (
   clientX: number,
@@ -6,10 +7,11 @@ export const calculateGridCoordinates = (
   rect: DOMRect,
   position: Coordinates,
   zoom: number
-): Coordinates => {
-  const x = (clientX - rect.left - position.x) / zoom;
-  const y = (clientY - rect.top - position.y) / zoom;
-  return { x: Math.floor(x), y: Math.floor(y) };
+): { gridX: number; gridY: number } => {
+  const effectivePixelSize = DEFAULT_PIXEL_SIZE * zoom;
+  const x = (clientX - rect.left - position.x) / effectivePixelSize;
+  const y = (clientY - rect.top - position.y) / effectivePixelSize;
+  return { gridX: Math.floor(x), gridY: Math.floor(y) };
 };
 
 export const isPixelInBounds = (

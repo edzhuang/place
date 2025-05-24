@@ -776,8 +776,6 @@ export function Canvas() {
 
   // MODIFIED: Handle wheel event for zooming
   const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault(); // Prevent default browser zoom behavior
-
     setMouseEventArgsForHover(null); // Clear hover on wheel event
     setIsDragging(false);
 
@@ -805,7 +803,6 @@ export function Canvas() {
 
   // NEW: Handle touch events for pinch-to-zoom and panning
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent all default touch behaviors
     setMouseEventArgsForHover(null); // Clear hover on touch start
 
     if (e.touches.length === 2) {
@@ -846,8 +843,6 @@ export function Canvas() {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent ALL default touch behaviors (scrolling, zooming, etc.)
-
     if (
       e.touches.length === 2 &&
       lastTouchDistanceRef.current &&
@@ -893,6 +888,9 @@ export function Canvas() {
         const deltaX = currentTouchPosition.x - lastPos.x;
         const deltaY = currentTouchPosition.y - lastPos.y;
 
+        // Update velocity for momentum (similar to mouse movement)
+        velocityRef.current = { x: deltaX, y: deltaY };
+
         // If setPosition was called here, it should be replaced by setClampedPosition
         // Example:
         // setPosition((prevPos) => ({
@@ -923,8 +921,6 @@ export function Canvas() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault(); // Prevent default touch behaviors on touch end
-
     if (e.touches.length < 2) {
       // Reset pinch state when pinch ends
       lastTouchDistanceRef.current = null;
