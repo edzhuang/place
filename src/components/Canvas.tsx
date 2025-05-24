@@ -316,27 +316,25 @@ export function Canvas() {
 
       // Draw username if available
       if (selectedPixelUser) {
-        const FONT_SIZE = 16; // Using the user's preferred font size
+        const FONT_SIZE = 14; // Using the user's preferred font size
         const PADDING_X = 12;
-        const PADDING_Y = 4;
-        ctx.font = `${FONT_SIZE}px Inter`;
+        const PADDING_Y = 8;
+        ctx.font = `${FONT_SIZE}px Geist`;
         ctx.textAlign = "center";
         const text = `Placed by ${selectedPixelUser}`;
         const textX = outlineX + drawSize / 2;
-        const textY = outlineY - 24; // Adjusted to center the text better
+        const textY = outlineY - 18; // Adjusted to center the text better
 
         const textMetrics = ctx.measureText(text);
         const textWidth = textMetrics.width;
         // Approximate text height based on font size, can be more precise if needed
-        const textHeight =
-          textMetrics.fontBoundingBoxAscent +
-          textMetrics.fontBoundingBoxDescent;
+        const textHeight = textMetrics.actualBoundingBoxAscent;
         const rectWidth = textWidth + PADDING_X * 2;
         const rectHeight = textHeight + PADDING_Y * 2;
         // Position the rectangle centered above the pixel selection
         // outlineY - 15 was the original text Y, so we base the rect Y on that
         const rectX = textX - textWidth / 2 - PADDING_X;
-        const rectY = textY - textHeight / 2 - PADDING_Y; // Adjusted to center the text better
+        const rectY = textY - textHeight - PADDING_Y; // Adjusted to center the text better
 
         // Draw black background rectangle
         ctx.fillStyle = "black";
@@ -344,9 +342,21 @@ export function Canvas() {
         ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 100);
         ctx.fill();
 
+        // Draw speech bubble tail (black triangle pointing down)
+        const triangleSize = 8;
+        const triangleX = textX; // Center the triangle horizontally
+        const triangleTopY = rectY + rectHeight; // Start at bottom of rectangle
+
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.moveTo(triangleX - triangleSize, triangleTopY); // Top point of triangle
+        ctx.lineTo(triangleX, triangleTopY + triangleSize); // Bottom left
+        ctx.lineTo(triangleX + triangleSize, triangleTopY); // Bottom right
+        ctx.closePath();
+        ctx.fill();
+
         // Draw username text (white for contrast)
         ctx.fillStyle = "white";
-        ctx.textBaseline = "middle"; // Center the text vertically
         ctx.textAlign = "center";
         ctx.fillText(text, textX, textY);
       }

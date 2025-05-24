@@ -23,7 +23,7 @@ export default function HomePage() {
       {/* Top UI */}
       <div className="fixed top-22 inset-x-0 flex flex-col items-center">
         {hoveredPixel && (
-          <Badge variant="outline" className="bg-background gap-4">
+          <Badge variant="outline" className="bg-background gap-4 font-mono">
             ({hoveredPixel.x}, {hoveredPixel.y})
           </Badge>
         )}
