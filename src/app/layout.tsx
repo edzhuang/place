@@ -87,15 +87,18 @@ export default function RootLayout({
           >
             <NavigationMenu>
               <NavigationMenuList>
-                <Link href="/" className="mr-3">
-                  <Image
-                    src="/logo-dark.png"
-                    width={1600}
-                    height={1600}
-                    alt="Workmark"
-                    className="h-8 w-auto"
-                    priority={true}
-                  />
+                <Link href="/">
+                  <div className="flex items-center gap-2 px-2">
+                    <Image
+                      src="/logo-dark.png"
+                      width={1600}
+                      height={1600}
+                      alt="logo"
+                      className="h-5 w-auto"
+                      priority={true}
+                    />
+                    <div className="text-5 font-semibold">Place</div>
+                  </div>
                 </Link>
 
                 <Dialog>
