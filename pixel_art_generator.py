@@ -5,53 +5,37 @@ Script for inputting an image and generating a CSV file for the canvas database.
 import csv
 import math
 import argparse
+import os # Added import
 from PIL import Image
 
 # Constants from src/constants/canvas.ts
 CANVAS_WIDTH = 100
 CANVAS_HEIGHT = 100
-COLORS_PALETTE = [
-    {"r": 255, "g": 69, "b": 0},    # Red
-    {"r": 255, "g": 168, "b": 0},   # Orange
-    {"r": 255, "g": 214, "b": 53},  # Yellow
-    {"r": 0, "g": 163, "b": 104},   # Green
-    {"r": 126, "g": 237, "b": 86},  # Light Green
-    {"r": 36, "g": 80, "b": 164},   # Blue
-    {"r": 54, "g": 144, "b": 234},  # Light Blue
-    {"r": 81, "g": 233, "b": 244},  # Cyan
-    {"r": 129, "g": 30, "b": 159},  # Purple
-    {"r": 255, "g": 153, "b": 170}, # Pink
-    {"r": 156, "g": 105, "b": 38},  # Brown
-    {"r": 0, "g": 0, "b": 0},       # Black
-    {"r": 137, "g": 141, "b": 144}, # Gray
-    {"r": 212, "g": 215, "b": 217}, # Light Gray
-    {"r": 255, "g": 255, "b": 255}, # White
-]
+# COLORS_PALETTE = [ ... ] # Removed COLORS_PALETTE
 
-def color_distance(rgb1, rgb2):
-    """Calculates the Euclidean distance between two RGB colors."""
-    return math.sqrt(
-        (rgb1[0] - rgb2["r"])**2 +
-        (rgb1[1] - rgb2["g"])**2 +
-        (rgb1[2] - rgb2["b"])**2
-    )
+# def color_distance(rgb1, rgb2): # Removed color_distance function
+#     """Calculates the Euclidean distance between two RGB colors."""
+#     return math.sqrt(
+#         (rgb1[0] - rgb2["r"])**2 +
+#         (rgb1[1] - rgb2["g"])**2 +
+#         (rgb1[2] - rgb2["b"])**2
+#     )
 
-def find_closest_palette_color(pixel_rgb, palette):
-    """Finds the closest color in the palette to the given RGB color."""
-    closest_color = palette[0]
-    min_dist = float('inf')
-    for color in palette:
-        dist = color_distance(pixel_rgb, color)
-        if dist < min_dist:
-            min_dist = dist
-            closest_color = color
-    return closest_color
+# def find_closest_palette_color(pixel_rgb, palette): # Removed find_closest_palette_color function
+#     """Finds the closest color in the palette to the given RGB color."""
+#     closest_color = palette[0]
+#     min_dist = float('inf')
+#     for color in palette:
+#         dist = color_distance(pixel_rgb, color)
+#         if dist < min_dist:
+#             min_dist = dist
+#             closest_color = color
+#     return closest_color
 
 def generate_csv_from_image(image_path, output_csv_path, placed_by_id):
     """
-    Generates a CSV file for Supabase pixel data from an image.
-    The image is resized to CANVAS_WIDTH x CANVAS_HEIGHT, and colors are
-    matched to the closest color in COLORS_PALETTE.
+    Generates a CSV file for Supabase pixel data from an image
+    and a preview image. The image is resized to CANVAS_WIDTH x CANVAS_HEIGHT.
     """
     try:
         img = Image.open(image_path)
@@ -73,13 +57,13 @@ def generate_csv_from_image(image_path, output_csv_path, placed_by_id):
     for y in range(CANVAS_HEIGHT):
         for x in range(CANVAS_WIDTH):
             r, g, b = img_resized.getpixel((x, y))
-            palette_color = find_closest_palette_color((r, g, b), COLORS_PALETTE)
+            # palette_color = find_closest_palette_color((r, g, b), COLORS_PALETTE) # Removed palette matching
             pixels_data.append({
                 "x": x,
                 "y": y,
-                "r": palette_color["r"],
-                "g": palette_color["g"],
-                "b": palette_color["b"],
+                "r": r, # Use direct r value
+                "g": g, # Use direct g value
+                "b": b, # Use direct b value
                 "placed_by": placed_by_id
             })
 
@@ -95,10 +79,21 @@ def generate_csv_from_image(image_path, output_csv_path, placed_by_id):
     except (csv.Error, TypeError, ValueError) as e:
         print(f"An error occurred during CSV writing or data processing: {e}")
 
+    # Generate and save the preview image
+    output_image_path_base, _ = os.path.splitext(output_csv_path)
+    output_image_path = output_image_path_base + ".png"
+    try:
+        img_resized.save(output_image_path)
+        print(f"Successfully generated preview image: {output_image_path}")
+    except IOError:
+        print(f"Error: Could not write to image file {output_image_path}")
+    except Exception as e: # Catch other Pillow/PIL errors during save
+        print(f"An error occurred during image saving: {e}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Convert an image to a CSV of pixels, matching colors to a predefined palette."
+        description="Convert an image to a CSV of pixels and generate a preview image." # Updated description
     )
     parser.add_argument(
         "image_path",
