@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@/components/Canvas";
-import { Drawer } from "@/components/Drawer";
+import { Drawer } from "@/components/Panel";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { ZoomControls } from "@/components/ZoomControls";
 import { LoaderCircle } from "lucide-react";
