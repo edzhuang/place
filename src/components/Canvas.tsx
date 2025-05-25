@@ -730,7 +730,7 @@ export function Canvas() {
     const zoomDelta = -e.deltaY * sensitivity; // Negative because positive deltaY means zoom out
 
     // Clamp the zoom delta to prevent extreme jumps
-    const clampedDelta = Math.max(-0.5, Math.min(0.5, zoomDelta));
+    const clampedDelta = Math.max(-0.1, Math.min(0.1, zoomDelta));
 
     // Convert to multiplication factor (1 = no change, >1 = zoom in, <1 = zoom out)
     const multFactor = 1 + clampedDelta;
