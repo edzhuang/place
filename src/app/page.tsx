@@ -1,13 +1,18 @@
 "use client";
 
+import {
+  CANVAS_WIDTH,
+  CANVAS_HEIGHT,
+  DEFAULT_PIXEL_SIZE,
+} from "@/constants/canvas";
 import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Panel";
 import { useCanvas } from "@/contexts/CanvasContext";
 import { ZoomControls } from "@/components/ZoomControls";
-import { LoaderCircle } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 
 import clsx from "clsx";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function HomePage() {
   const { isLoading, selectedPixel, hoveredPixel } = useCanvas();
@@ -16,7 +21,11 @@ export default function HomePage() {
     <div className="flex flex-col h-screen justify-center items-center bg-muted/15">
       {/* Canvas */}
       {isLoading ? (
-        <LoaderCircle className="h-12 w-12 animate-spin text-muted-foreground" />
+        <Skeleton
+          className={`w-[${CANVAS_WIDTH * DEFAULT_PIXEL_SIZE}px] h-[${
+            CANVAS_HEIGHT * DEFAULT_PIXEL_SIZE
+          }px]`}
+        />
       ) : (
         <Canvas />
       )}

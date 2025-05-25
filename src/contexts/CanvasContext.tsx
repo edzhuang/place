@@ -78,20 +78,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return createClerkSupabaseClient();
   }, [session]);
 
-  const centerCanvas = () => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-
-    const centeredX = (viewportWidth - DEFAULT_PIXEL_SIZE * CANVAS_WIDTH) / 2;
-    const centeredY = (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
-
-    setPosition({ x: centeredX, y: centeredY });
-  };
-
   // Fetch the initial pixels
   useEffect(() => {
     const fetchInitialPixels = async () => {
@@ -128,15 +114,14 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           }
         });
         setPixels(newPixels);
+        setIsLoading(false);
       }
     };
 
     if (isLoading) {
       fetchInitialPixels();
-      centerCanvas();
-      setIsLoading(false);
     }
-  }, [client, isLoading]); // Keep client as dependency to ensure it's initialized
+  }, [client, isLoading]);
 
   // Subscribe to real-time changes
   useEffect(() => {

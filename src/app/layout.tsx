@@ -36,6 +36,7 @@ import Link from "next/link";
 import React from "react";
 import { Button } from "@/components/ui/Button";
 import { AboutDialog } from "@/components/AboutDialog";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -87,68 +88,77 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <NavigationMenu>
-              {/* Left side */}
-              <div className="flex items-center gap-4">
-                <Link href="/">
-                  <div className="flex items-center gap-2">
-                    <Image
-                      src="/logo-dark.png"
-                      width={1600}
-                      height={1600}
-                      alt="logo"
-                      className="h-5 w-auto"
-                      priority={true}
-                    />
-                    <div className="text-5 font-medium">Place</div>
-                  </div>
-                </Link>
+              <NavigationMenuList>
+                <NavigationMenuItem className="flex">
+                  <NavigationMenuLink asChild>
+                    <Link href="/" className="mr-2">
+                      <div className="flex items-center gap-2">
+                        <Image
+                          src="/logo-dark.png"
+                          width={1600}
+                          height={1600}
+                          alt="logo"
+                          className="h-5 w-auto"
+                          priority={true}
+                        />
+                        <div className="text-5 font-medium">Place</div>
+                      </div>
+                    </Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
 
-                <NavigationMenuList className="hidden md:flex">
-                  <AboutDialog>
-                    <NavigationMenuItem className="cursor-pointer">
-                      <NavigationMenuLink
-                        className={navigationMenuTriggerStyle()}
-                      >
-                        About
-                      </NavigationMenuLink>
-                    </NavigationMenuItem>
-                  </AboutDialog>
-
-                  <NavigationMenuItem>
+                <AboutDialog>
+                  <NavigationMenuItem className="cursor-pointer hidden md:flex">
                     <NavigationMenuLink
                       className={navigationMenuTriggerStyle()}
-                      asChild
                     >
-                      <Link href="https://github.com/edzhuang/place">
-                        GitHub
-                      </Link>
+                      About
                     </NavigationMenuLink>
                   </NavigationMenuItem>
-                </NavigationMenuList>
-              </div>
+                </AboutDialog>
 
-              {/* Right side */}
+                <NavigationMenuItem className="hidden md:flex">
+                  <NavigationMenuLink
+                    className={navigationMenuTriggerStyle()}
+                    asChild
+                  >
+                    <Link href="https://github.com/edzhuang/place">GitHub</Link>
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+
               <NavigationMenuList>
                 <SignedOut>
-                  <SignInButton>
-                    <Button size="xs" variant="ghost">
-                      Sign in
-                    </Button>
-                  </SignInButton>
-                  <SignUpButton>
-                    <Button size="xs" variant="primary">
-                      Sign up
-                    </Button>
-                  </SignUpButton>
+                  <NavigationMenuItem>
+                    <SignInButton>
+                      <Button size="xs" variant="ghost">
+                        Sign in
+                      </Button>
+                    </SignInButton>
+                  </NavigationMenuItem>
+                  <NavigationMenuItem>
+                    <SignUpButton>
+                      <Button size="xs" variant="primary">
+                        Sign up
+                      </Button>
+                    </SignUpButton>
+                  </NavigationMenuItem>
                 </SignedOut>
+
                 <SignedIn>
-                  <UserButton />
+                  <NavigationMenuItem className="flex">
+                    <UserButton
+                      fallback={<Skeleton className="size-7 rounded-full" />}
+                    />
+                  </NavigationMenuItem>
                 </SignedIn>
 
                 {/* Mobile menu */}
                 <Drawer>
                   <DrawerTrigger className="ml-4 md:hidden">
-                    <Menu />
+                    <NavigationMenuItem>
+                      <Menu />
+                    </NavigationMenuItem>
                   </DrawerTrigger>
                   <DrawerContent>
                     <VisuallyHidden>
