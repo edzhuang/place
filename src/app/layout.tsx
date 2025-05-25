@@ -127,12 +127,12 @@ export default function RootLayout({
               <NavigationMenuList>
                 <SignedOut>
                   <SignInButton>
-                    <Button size="sm" variant="ghost">
+                    <Button size="xs" variant="ghost">
                       Sign in
                     </Button>
                   </SignInButton>
                   <SignUpButton>
-                    <Button size="sm" variant="primary">
+                    <Button size="xs" variant="primary">
                       Sign up
                     </Button>
                   </SignUpButton>
