@@ -6,7 +6,7 @@ export function Palette() {
   const { selectedColor, setSelectedColor } = useCanvas();
 
   return (
-    <div className="flex flex-nowrap gap-2 overflow-x-auto w-full max-w-min px-6 py-2">
+    <div className="flex flex-nowrap gap-2 overflow-x-auto no-scrollbar w-full max-w-min px-6 py-1">
       {COLORS.map((color) => (
         <button
           key={`${color.r}, ${color.g}, ${color.b}`}
