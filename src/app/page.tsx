@@ -13,7 +13,7 @@ export default function HomePage() {
   const { isLoading, selectedPixel, hoveredPixel } = useCanvas();
 
   return (
-    <div className="flex flex-col h-screen justify-center items-center">
+    <div className="flex flex-col h-screen justify-center items-center bg-muted/15">
       {/* Canvas */}
       {isLoading ? (
         <LoaderCircle className="h-12 w-12 animate-spin text-muted-foreground" />
