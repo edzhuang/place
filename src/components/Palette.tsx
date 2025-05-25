@@ -6,11 +6,11 @@ export function Palette() {
   const { selectedColor, setSelectedColor } = useCanvas();
 
   return (
-    <div className="flex flex-wrap gap-2 px-6">
+    <div className="flex flex-nowrap gap-2 overflow-x-auto w-full max-w-min px-6 py-2">
       {COLORS.map((color) => (
         <button
           key={`${color.r}, ${color.g}, ${color.b}`}
-          className={clsx("w-8 h-8 rounded-md border", {
+          className={clsx("w-8 h-8 rounded-md border flex-shrink-0", {
             "hover:outline-2 hover:outline-gray-500": selectedColor !== color,
             "outline-2 outline-primary": selectedColor === color,
           })}

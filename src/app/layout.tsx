@@ -79,7 +79,7 @@ export default function RootLayout({
     >
       <html lang="en" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} bg-background text-foreground font-sans antialiased`}
         >
           <ThemeProvider
             defaultTheme="dark"
@@ -99,7 +99,7 @@ export default function RootLayout({
                       className="h-5 w-auto"
                       priority={true}
                     />
-                    <div className="text-5 font-semibold">Place</div>
+                    <div className="text-5">Place</div>
                   </div>
                 </Link>
 
@@ -143,8 +143,8 @@ export default function RootLayout({
 
                 {/* Mobile menu */}
                 <Drawer>
-                  <DrawerTrigger>
-                    <Menu className="md:hidden ml-4" />
+                  <DrawerTrigger className="ml-4">
+                    <Menu className="md:hidden" />
                   </DrawerTrigger>
                   <DrawerContent>
                     <VisuallyHidden>
