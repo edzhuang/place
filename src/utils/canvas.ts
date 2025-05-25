@@ -1,6 +1,41 @@
 import { Coordinates, Pixel } from "../types/canvas";
 import { DEFAULT_PIXEL_SIZE } from "../constants/canvas";
 
+// Helper function to clamp position (remains outside)
+export const clampPosition = (
+  pos: Coordinates,
+  zoom: number,
+  pixelsData: Pixel[][] | null,
+  defaultPixelSize: number
+): Coordinates => {
+  if (
+    !window ||
+    !pixelsData ||
+    pixelsData.length === 0 ||
+    !pixelsData[0] ||
+    pixelsData[0].length === 0
+  ) {
+    return pos;
+  }
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
+  const gridWidth = pixelsData[0].length;
+  const gridHeight = pixelsData.length;
+  const effectivePixelSize = defaultPixelSize * zoom;
+  const contentWidth = gridWidth * effectivePixelSize;
+  const contentHeight = gridHeight * effectivePixelSize;
+
+  let clampedX = pos.x;
+  let clampedY = pos.y;
+
+  clampedX = Math.min(clampedX, viewportWidth / 2);
+  clampedX = Math.max(clampedX, viewportWidth / 2 - contentWidth);
+  clampedY = Math.min(clampedY, viewportHeight / 2);
+  clampedY = Math.max(clampedY, viewportHeight / 2 - contentHeight);
+
+  return { x: clampedX, y: clampedY };
+};
+
 export const calculateGridCoordinates = (
   clientX: number,
   clientY: number,

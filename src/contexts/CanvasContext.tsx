@@ -1,6 +1,7 @@
 "use client";
 
 import type React from "react";
+import { useCallback } from "react";
 import type { Pixel, Coordinates, CanvasContextState } from "@/types/canvas";
 import { PIXELS_TABLE } from "@/constants/canvas";
 import {
@@ -22,6 +23,7 @@ import {
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
 import { placePixelAction } from "@/actions/canvasActions"; // Import the server action
+import { clampPosition } from "@/utils/canvas";
 
 const defaultPixel: Pixel = {
   color: {
@@ -44,7 +46,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [selectedPixel, setSelectedPixel] = useState<Coordinates | null>(null);
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 }); // Initialize with default values
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [lastPlacedTimestamp, setLastPlacedTimestamp] = useState<number | null>(
@@ -61,6 +63,15 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       setLastPlacedTimestamp(null);
     }
   }, [user]); // Re-run when the user object changes
+
+  // Effect to initialize canvas position to the center of the screen
+  useEffect(() => {
+    const initialX =
+      (window.innerWidth - CANVAS_WIDTH * DEFAULT_PIXEL_SIZE) / 2;
+    const initialY =
+      (window.innerHeight - CANVAS_HEIGHT * DEFAULT_PIXEL_SIZE) / 2;
+    setPosition({ x: initialX, y: initialY });
+  }, []); // Include zoom in the dependency array
 
   const client = useMemo(() => {
     function createClerkSupabaseClient() {
@@ -188,6 +199,21 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     };
   }, [client, session]); // Added session to dependencies
 
+  const setClampedPosition = useCallback(
+    (
+      newPosValueOrFn: Coordinates | ((prevPos: Coordinates) => Coordinates)
+    ) => {
+      setPosition((currentActualPosition) => {
+        const newUnclampedPos =
+          typeof newPosValueOrFn === "function"
+            ? newPosValueOrFn(currentActualPosition)
+            : newPosValueOrFn;
+        return clampPosition(newUnclampedPos, zoom, pixels, DEFAULT_PIXEL_SIZE);
+      });
+    },
+    [pixels, zoom] // Depends only on the stable setPosition from context
+  );
+
   const adjustZoom = (
     multFactor: number,
     anchor?: { x: number; y: number }
@@ -204,7 +230,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     const newPositionX = anchor.x - (anchor.x - position.x) * (newZoom / zoom);
     const newPositionY = anchor.y - (anchor.y - position.y) * (newZoom / zoom);
-    setPosition({ x: newPositionX, y: newPositionY });
+    setClampedPosition({ x: newPositionX, y: newPositionY });
   };
 
   const placePixel = async () => {
@@ -256,7 +282,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     zoom,
     adjustZoom,
     position,
-    setPosition,
+    setClampedPosition,
     isDragging,
     setIsDragging,
     dragStart,

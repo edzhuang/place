@@ -7,44 +7,8 @@ import {
   KEY_ACCELERATION,
   MAX_KEY_VELOCITY,
 } from "../constants/canvas";
-import { Coordinates, Pixel } from "../types/canvas";
+import { Coordinates } from "../types/canvas";
 import { calculateGridCoordinates, isPixelInBounds } from "../utils/canvas"; // Assuming these utils exist
-
-// Helper function to clamp position (remains outside)
-const clampPosition = (
-  pos: Coordinates,
-  zoom: number,
-  pixelsData: Pixel[][] | null,
-  canvasElement: HTMLCanvasElement | null,
-  defaultPixelSize: number
-): Coordinates => {
-  if (
-    !canvasElement ||
-    !pixelsData ||
-    pixelsData.length === 0 ||
-    !pixelsData[0] ||
-    pixelsData[0].length === 0
-  ) {
-    return pos;
-  }
-  const viewportWidth = canvasElement.width;
-  const viewportHeight = canvasElement.height;
-  const gridWidth = pixelsData[0].length;
-  const gridHeight = pixelsData.length;
-  const effectivePixelSize = defaultPixelSize * zoom;
-  const contentWidth = gridWidth * effectivePixelSize;
-  const contentHeight = gridHeight * effectivePixelSize;
-
-  let clampedX = pos.x;
-  let clampedY = pos.y;
-
-  clampedX = Math.min(clampedX, viewportWidth / 2);
-  clampedX = Math.max(clampedX, viewportWidth / 2 - contentWidth);
-  clampedY = Math.min(clampedY, viewportHeight / 2);
-  clampedY = Math.max(clampedY, viewportHeight / 2 - contentHeight);
-
-  return { x: clampedX, y: clampedY };
-};
 
 export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -86,7 +50,7 @@ export function Canvas() {
     zoom,
     adjustZoom,
     position,
-    setPosition,
+    setClampedPosition,
     isDragging,
     setIsDragging,
     dragStart,
@@ -104,43 +68,6 @@ export function Canvas() {
   useEffect(() => {
     pixelsRef.current = pixels;
   }, [pixels]);
-
-  // Stable wrapper for setPosition that applies clamping
-  const setClampedPosition = useCallback(
-    (
-      newPosValueOrFn: Coordinates | ((prevPos: Coordinates) => Coordinates)
-    ) => {
-      setPosition((currentActualPosition) => {
-        const newUnclampedPos =
-          typeof newPosValueOrFn === "function"
-            ? newPosValueOrFn(currentActualPosition)
-            : newPosValueOrFn;
-        return clampPosition(
-          newUnclampedPos,
-          zoomRef.current, // Use ref for current zoom
-          pixelsRef.current, // Use ref for current pixels
-          canvasRef.current, // Directly use canvasRef.current
-          DEFAULT_PIXEL_SIZE
-        );
-      });
-    },
-    [setPosition] // Depends only on the stable setPosition from context
-  );
-
-  // Global clamping effect: Re-clamp if position, zoom, or pixels change
-  useEffect(() => {
-    const clamped = clampPosition(
-      position, // Current position from state
-      zoom, // Current zoom from state
-      pixels, // Current pixels from state
-      canvasRef.current,
-      DEFAULT_PIXEL_SIZE
-    );
-    // Only update if the clamped position is different, to avoid infinite loops
-    if (clamped.x !== position.x || clamped.y !== position.y) {
-      setPosition(clamped); // Use original setPosition from context
-    }
-  }, [position, zoom, pixels, setPosition, canvasRef]); // DEFAULT_PIXEL_SIZE is a constant
 
   // Utility function to stop animations and reset states
   const stopAndResetAnimations = useCallback(() => {
@@ -696,10 +623,6 @@ export function Canvas() {
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
       // Update position based on the new drag start
-      // setPosition({
-      //   x: e.clientX - newDragStartX,
-      //   y: e.clientY - newDragStartY,
-      // });
       setClampedPosition({
         x: e.clientX - newDragStartX,
         y: e.clientY - newDragStartY,
@@ -716,10 +639,6 @@ export function Canvas() {
       }
       lastMousePositionRef.current = { x: e.clientX, y: e.clientY };
 
-      // setPosition({
-      //   x: e.clientX - dragStart.x,
-      //   y: e.clientY - dragStart.y,
-      // });
       setClampedPosition({
         x: e.clientX - dragStart.x,
         y: e.clientY - dragStart.y,
@@ -915,12 +834,6 @@ export function Canvas() {
         // Update velocity for momentum (similar to mouse movement)
         velocityRef.current = { x: deltaX, y: deltaY };
 
-        // If setPosition was called here, it should be replaced by setClampedPosition
-        // Example:
-        // setPosition((prevPos) => ({
-        //   x: prevPos.x + deltaX,
-        //   y: prevPos.y + deltaY,
-        // }));
         setClampedPosition((prevPos) => ({
           x: prevPos.x + deltaX,
           y: prevPos.y + deltaY,

@@ -27,7 +27,7 @@ export interface CanvasContextState {
   zoom: number;
   adjustZoom: (multFactor: number, anchor?: Coordinates) => void;
   position: Coordinates;
-  setPosition: React.Dispatch<React.SetStateAction<Coordinates>>;
+  setClampedPosition: React.Dispatch<React.SetStateAction<Coordinates>>;
   isDragging: boolean;
   setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
   dragStart: Coordinates;
