@@ -131,10 +131,12 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    fetchInitialPixels();
-    centerCanvas();
-    setIsLoading(false);
-  }, [client]); // Keep client as dependency to ensure it's initialized
+    if (isLoading) {
+      fetchInitialPixels();
+      centerCanvas();
+      setIsLoading(false);
+    }
+  }, [client, isLoading]); // Keep client as dependency to ensure it's initialized
 
   // Subscribe to real-time changes
   useEffect(() => {
