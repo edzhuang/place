@@ -37,7 +37,7 @@ export default function HomePage() {
           { "translate-y-32": !selectedPixel }
         )}
       >
-        <div className="flex justify-end p-8">
+        <div className="flex justify-end p-6">
           <ZoomControls />
         </div>
         <div className="pointer-events-auto">
