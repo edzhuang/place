@@ -88,8 +88,8 @@ export default function RootLayout({
           >
             <NavigationMenu>
               {/* Left side */}
-              <NavigationMenuList>
-                <Link href="/" className="mr-2">
+              <div className="flex items-center gap-4">
+                <Link href="/">
                   <div className="flex items-center gap-2">
                     <Image
                       src="/logo-dark.png"
@@ -99,29 +99,33 @@ export default function RootLayout({
                       className="h-5 w-auto"
                       priority={true}
                     />
-                    <div className="text-5">Place</div>
+                    <div className="text-5 font-medium">Place</div>
                   </div>
                 </Link>
 
-                <AboutDialog>
-                  <NavigationMenuItem className="cursor-pointer hidden md:flex">
+                <NavigationMenuList className="hidden md:flex">
+                  <AboutDialog>
+                    <NavigationMenuItem className="cursor-pointer">
+                      <NavigationMenuLink
+                        className={navigationMenuTriggerStyle()}
+                      >
+                        About
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                  </AboutDialog>
+
+                  <NavigationMenuItem>
                     <NavigationMenuLink
                       className={navigationMenuTriggerStyle()}
+                      asChild
                     >
-                      About
+                      <Link href="https://github.com/edzhuang/place">
+                        GitHub
+                      </Link>
                     </NavigationMenuLink>
                   </NavigationMenuItem>
-                </AboutDialog>
-
-                <NavigationMenuItem className="hidden md:flex">
-                  <NavigationMenuLink
-                    className={navigationMenuTriggerStyle()}
-                    asChild
-                  >
-                    <Link href="https://github.com/edzhuang/place">GitHub</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              </NavigationMenuList>
+                </NavigationMenuList>
+              </div>
 
               {/* Right side */}
               <NavigationMenuList>
