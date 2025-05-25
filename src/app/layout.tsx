@@ -20,19 +20,22 @@ import {
   NavigationMenuLink,
   navigationMenuTriggerStyle,
 } from "@/components/ui/NavigationMenu";
+import { VisuallyHidden } from "@/components/ui/_VisuallyHidden";
 import {
-  Dialog,
-  DialogBody,
-  DialogDescription,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/Dialog";
+  Drawer,
+  DrawerBody,
+  DrawerContent,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTrigger,
+} from "@/components/ui/Drawer";
+import { Menu } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import { Button } from "@/components/ui/Button";
+import { AboutDialog } from "@/components/AboutDialog";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,6 +87,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             <NavigationMenu>
+              {/* Left side */}
               <NavigationMenuList>
                 <Link href="/" className="mr-2">
                   <div className="flex items-center gap-2">
@@ -99,48 +103,17 @@ export default function RootLayout({
                   </div>
                 </Link>
 
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <NavigationMenuItem className="cursor-pointer">
-                      <NavigationMenuLink
-                        className={navigationMenuTriggerStyle()}
-                      >
-                        About
-                      </NavigationMenuLink>
-                    </NavigationMenuItem>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>About</DialogTitle>
-                      <DialogDescription>
-                        Learn about this project
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogBody className="flex flex-col gap-y-3">
-                      <p>
-                        This is a recreation of Reddit&apos;s{" "}
-                        <Link
-                          className="text-muted-foreground hover:text-foreground hover:[&>code]:text-foreground underline underline-offset-[5px] transition-colors"
-                          href="https://en.wikipedia.org/wiki/R%2Fplace"
-                        >
-                          r/place
-                        </Link>{" "}
-                        - a collaborative digital canvas where users can place
-                        colored pixels to create art together.
-                      </p>
-                      <p>
-                        You must be signed in to place pixels. After placing a
-                        pixel, there is a cooldown period of one minute.
-                      </p>
-                      <p>
-                        Built with Next.js, TypeScript, Clerk, and Supabase for
-                        real-time collaboration.
-                      </p>
-                    </DialogBody>
-                  </DialogContent>
-                </Dialog>
+                <AboutDialog>
+                  <NavigationMenuItem className="cursor-pointer hidden md:flex">
+                    <NavigationMenuLink
+                      className={navigationMenuTriggerStyle()}
+                    >
+                      About
+                    </NavigationMenuLink>
+                  </NavigationMenuItem>
+                </AboutDialog>
 
-                <NavigationMenuItem>
+                <NavigationMenuItem className="hidden md:flex">
                   <NavigationMenuLink
                     className={navigationMenuTriggerStyle()}
                     asChild
@@ -150,6 +123,7 @@ export default function RootLayout({
                 </NavigationMenuItem>
               </NavigationMenuList>
 
+              {/* Right side */}
               <NavigationMenuList>
                 <SignedOut>
                   <SignInButton>
@@ -166,6 +140,38 @@ export default function RootLayout({
                 <SignedIn>
                   <UserButton />
                 </SignedIn>
+
+                {/* Mobile menu */}
+                <Drawer>
+                  <DrawerTrigger>
+                    <Menu className="md:hidden ml-4" />
+                  </DrawerTrigger>
+                  <DrawerContent>
+                    <VisuallyHidden>
+                      <DrawerHeader>
+                        <DrawerTitle>Menu</DrawerTitle>
+                        <DrawerDescription>
+                          Mobile version of the navigation menu
+                        </DrawerDescription>
+                      </DrawerHeader>
+                    </VisuallyHidden>
+                    <DrawerBody>
+                      <div className="overflow-auto p-2 min-h-[70vh]">
+                        <div className="flex flex-col space-y-3">
+                          <AboutDialog>
+                            <div className="text-[1.15rem]">About</div>
+                          </AboutDialog>
+                          <Link
+                            href="https://github.com/edzhuang/place"
+                            className="text-[1.15rem]"
+                          >
+                            GitHub
+                          </Link>
+                        </div>
+                      </div>
+                    </DrawerBody>
+                  </DrawerContent>
+                </Drawer>
               </NavigationMenuList>
             </NavigationMenu>
 
