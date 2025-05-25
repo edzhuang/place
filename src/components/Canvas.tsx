@@ -380,6 +380,7 @@ export function Canvas() {
 
         const textMetrics = ctx.measureText(text);
         const textWidth = textMetrics.width;
+
         // Approximate text height based on font size, can be more precise if needed
         const textHeight = textMetrics.actualBoundingBoxAscent;
         const rectWidth = textWidth + PADDING_X * 2;
@@ -389,16 +390,10 @@ export function Canvas() {
         const rectX = textX - textWidth / 2 - PADDING_X;
         const rectY = textY - textHeight - PADDING_Y; // Adjusted to center the text better
 
-        // Draw black background rectangle
-        ctx.fillStyle = "black";
-        ctx.beginPath();
-        ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 100);
-        ctx.fill();
-
         // Draw speech bubble tail (black triangle pointing down)
-        const triangleSize = 8;
+        const triangleSize = 10;
         const triangleX = textX; // Center the triangle horizontally
-        const triangleTopY = rectY + rectHeight; // Start at bottom of rectangle
+        const triangleTopY = rectY + rectHeight - 2; // Start at bottom of rectangle
 
         ctx.fillStyle = "black";
         ctx.beginPath();
@@ -406,6 +401,12 @@ export function Canvas() {
         ctx.lineTo(triangleX, triangleTopY + triangleSize); // Bottom left
         ctx.lineTo(triangleX + triangleSize, triangleTopY); // Bottom right
         ctx.closePath();
+        ctx.fill();
+
+        // Draw black background rectangle
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.roundRect(rectX, rectY, rectWidth, rectHeight, rectHeight / 2);
         ctx.fill();
 
         // Draw username text (white for contrast)

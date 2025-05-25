@@ -13,9 +13,9 @@ import {
 } from "react";
 import {
   COLORS,
+  DEFAULT_PIXEL_SIZE,
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
-  DEFAULT_PIXEL_SIZE,
   MAX_ZOOM,
   MIN_ZOOM,
 } from "@/constants/canvas";
@@ -78,8 +78,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return createClerkSupabaseClient();
   }, [session]);
 
-  // Effect to center the canvas on initial client-side render
-  useEffect(() => {
+  const centerCanvas = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
 
@@ -87,7 +90,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const centeredY = (viewportHeight - DEFAULT_PIXEL_SIZE * CANVAS_HEIGHT) / 2;
 
     setPosition({ x: centeredX, y: centeredY });
-  }, []); // Empty dependency array ensures this runs only once on mount
+  };
 
   // Fetch the initial pixels
   useEffect(() => {
@@ -126,10 +129,11 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
         });
         setPixels(newPixels);
       }
-      setIsLoading(false);
     };
 
     fetchInitialPixels();
+    centerCanvas();
+    setIsLoading(false);
   }, [client]); // Keep client as dependency to ensure it's initialized
 
   // Subscribe to real-time changes
