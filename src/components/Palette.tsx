@@ -11,7 +11,8 @@ export function Palette() {
         <button
           key={`${color.r}, ${color.g}, ${color.b}`}
           className={clsx("w-8 h-8 rounded-md border", {
-            "outline outline-primary": selectedColor === color,
+            "hover:outline-2 hover:outline-gray-500": selectedColor !== color,
+            "outline-2 outline-primary": selectedColor === color,
           })}
           style={{ backgroundColor: `rgb(${color.r}, ${color.g}, ${color.b})` }}
           onClick={() => setSelectedColor(color)}

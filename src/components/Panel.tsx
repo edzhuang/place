@@ -43,7 +43,7 @@ export function Drawer() {
   const secondsLeft = Math.ceil(remainingTime / 1000);
 
   return (
-    <div className="relative w-full flex flex-col bg-background justify-evenly h-32 px-8 items-center border-t">
+    <div className="relative w-full flex flex-col bg-background justify-evenly h-32 items-center border-t">
       <Palette />
       <div className="flex flex-row gap-2">
         <Button
