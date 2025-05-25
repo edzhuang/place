@@ -143,8 +143,8 @@ export default function RootLayout({
 
                 {/* Mobile menu */}
                 <Drawer>
-                  <DrawerTrigger className="ml-4">
-                    <Menu className="md:hidden" />
+                  <DrawerTrigger className="ml-4 md:hidden">
+                    <Menu />
                   </DrawerTrigger>
                   <DrawerContent>
                     <VisuallyHidden>
