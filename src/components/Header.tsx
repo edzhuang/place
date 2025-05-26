@@ -110,7 +110,7 @@ function Header() {
               </DrawerHeader>
             </VisuallyHidden>
             <DrawerBody>
-              <div className="overflow-auto p-2 min-h-[70vh]">
+              <div className="overflow-auto p-2 min-h-[70dvh]">
                 <div className="flex flex-col space-y-3">
                   <AboutDialog>
                     <div className="text-[1.15rem]">About</div>
