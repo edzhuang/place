@@ -38,8 +38,8 @@ function AboutDialog({
             pixels to create art together.
           </p>
           <p>
-            You must be signed in to place pixels. After placing a pixel, there
-            is a cooldown period of one minute.
+            You must be signed in to place pixels. There is a short cooldown
+            period after placing a pixel.
           </p>
           <p>
             Built with Next.js, TypeScript, Clerk, and Supabase for real-time
