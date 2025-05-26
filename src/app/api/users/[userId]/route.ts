@@ -3,10 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  context: { params: { userId: string } }
 ) {
   try {
-    const { userId } = await params;
+    const { userId } = context.params; // No await needed for params
     if (!userId) {
       return NextResponse.json(
         { error: "User ID is required" },
