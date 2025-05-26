@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     {
       rel: "icon",
       type: "image/x-icon",
-      url: "/favicon-light.ico",
+      url: "/favicon.ico",
       media: "(prefers-color-scheme: light)",
     },
     {

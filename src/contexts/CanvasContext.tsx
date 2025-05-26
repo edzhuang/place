@@ -134,12 +134,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Subscribe to real-time changes
   useEffect(() => {
-    if (!session) {
-      // Session is not yet available, wait for it before subscribing.
-      return;
-    }
-
-    // Subscribe to real-time changes on the PIXELS_TABLE
     const channel = client
       .channel("realtime-pixels-updates") // Unique channel name
       .on(
@@ -195,7 +189,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     return () => {
       client.removeChannel(channel);
     };
-  }, [client, session]); // Added session to dependencies
+  }, [client]); // Added session to dependencies
 
   const setClampedPosition = useCallback(
     (
