@@ -22,7 +22,7 @@ import {
 } from "@/constants/canvas";
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
-import { placePixelAction } from "@/actions/canvasActions"; // Import the server action
+import { placePixelAction } from "@/actions"; // Import the server action
 import { clampPosition } from "@/utils/canvas";
 
 const defaultPixel: Pixel = {

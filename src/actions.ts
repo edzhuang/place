@@ -1,7 +1,7 @@
 "use server";
 
 import { createServerSupabaseClient } from "@/utils/supabase/server";
-import { auth, currentUser, clerkClient } from "@clerk/nextjs/server"; // Renamed import for clarity
+import { auth, currentUser, clerkClient } from "@clerk/nextjs/server";
 import { PIXELS_TABLE } from "@/constants/canvas";
 import type { Coordinates, Color } from "@/types/canvas";
 import { cooldown } from "@/constants/canvas";
@@ -10,13 +10,14 @@ export async function placePixelAction(
   selectedPixel: Coordinates,
   selectedColor: Color
 ): Promise<{ success: boolean; error?: string | null }> {
-  const authResult = await auth();
-  const userId = authResult.userId;
+  // Check authentication first with auth() - lighter weight
+  const { userId } = await auth();
 
   if (!userId) {
     return { success: false, error: "User not authenticated." };
   }
 
+  // Only fetch full user object if we need metadata
   const user = await currentUser();
   const lastPlaced = user?.publicMetadata?.lastPlaced as number | undefined;
   const now: number = Date.now();
