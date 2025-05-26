@@ -40,7 +40,7 @@ function Header() {
             <Link href="/" className="mr-2">
               <div className="flex items-center gap-2">
                 <Image
-                  src="/place/logo-dark.png"
+                  src="/logo-dark.png"
                   width={1600}
                   height={1600}
                   alt="logo"
