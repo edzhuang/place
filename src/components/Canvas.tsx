@@ -140,7 +140,7 @@ export function Canvas() {
 
     const fetchUsername = async (userId: string) => {
       try {
-        const response = await fetch(`/api/users/${userId}`, { signal });
+        const response = await fetch(`/place/api/users/${userId}`, { signal });
         if (!response.ok) {
           // If the response status is 404, it means the user was not found
           if (response.status === 404) {

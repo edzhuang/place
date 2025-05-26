@@ -26,13 +26,13 @@ export const metadata: Metadata = {
     {
       rel: "icon",
       type: "image/x-icon",
-      url: "/favicon-light.ico",
+      url: "/place/favicon-light.ico",
       media: "(prefers-color-scheme: light)",
     },
     {
       rel: "icon",
       type: "image/png",
-      url: "/favicon-dark.ico",
+      url: "/place/favicon-dark.ico",
       media: "(prefers-color-scheme: dark)",
     },
   ],
