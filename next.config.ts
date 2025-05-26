@@ -4,7 +4,7 @@ const nextConfig: NextConfig = {
   basePath: "/place",
   experimental: {
     serverActions: {
-      allowedOrigins: ["eddiezhuang.com", "www.eddiezhuang.com"],
+      allowedOrigins: ["eddiezhuang.com", "www.eddiezhuang.com", "place-chi.vercel.app"],
     },
   },
 };
