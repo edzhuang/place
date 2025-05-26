@@ -129,9 +129,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
-    if (isLoading) {
-      fetchInitialPixels();
-    }
+    fetchInitialPixels();
   }, [client, isLoading]);
 
   // Subscribe to real-time changes

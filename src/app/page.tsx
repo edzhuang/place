@@ -1,10 +1,5 @@
 "use client";
 
-import {
-  CANVAS_WIDTH,
-  CANVAS_HEIGHT,
-  DEFAULT_PIXEL_SIZE,
-} from "@/constants/canvas";
 import { Canvas } from "@/components/Canvas";
 import { Drawer } from "@/components/Panel";
 import { useCanvas } from "@/contexts/CanvasContext";
@@ -20,15 +15,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col h-screen justify-center items-center bg-muted/15">
       {/* Canvas */}
-      {isLoading ? (
-        <Skeleton
-          className={`w-[${CANVAS_WIDTH * DEFAULT_PIXEL_SIZE}px] h-[${
-            CANVAS_HEIGHT * DEFAULT_PIXEL_SIZE
-          }px]`}
-        />
-      ) : (
-        <Canvas />
-      )}
+      {isLoading ? <Skeleton className="size-[1000px]" /> : <Canvas />}
 
       {/* Top UI */}
       <div className="fixed top-22 inset-x-0 flex flex-col items-center">
