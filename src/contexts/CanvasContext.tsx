@@ -215,14 +215,20 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   const setClampedPosition = useCallback(
     (
-      newPosValueOrFn: Coordinates | ((prevPos: Coordinates) => Coordinates)
+      newPosValueOrFn: Coordinates | ((prevPos: Coordinates) => Coordinates),
+      newZoom: number = zoom
     ) => {
       setPosition((currentActualPosition) => {
         const newUnclampedPos =
           typeof newPosValueOrFn === "function"
             ? newPosValueOrFn(currentActualPosition)
             : newPosValueOrFn;
-        return clampPosition(newUnclampedPos, zoom, pixels, DEFAULT_PIXEL_SIZE);
+        return clampPosition(
+          newUnclampedPos,
+          newZoom,
+          pixels,
+          DEFAULT_PIXEL_SIZE
+        );
       });
     },
     [pixels, zoom] // Depends only on the stable setPosition from context
@@ -244,7 +250,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
     const newPositionX = anchor.x - (anchor.x - position.x) * (newZoom / zoom);
     const newPositionY = anchor.y - (anchor.y - position.y) * (newZoom / zoom);
-    setClampedPosition({ x: newPositionX, y: newPositionY });
+    setClampedPosition({ x: newPositionX, y: newPositionY }, newZoom);
   };
 
   const placePixel = async () => {
