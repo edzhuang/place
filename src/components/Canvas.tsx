@@ -477,19 +477,19 @@ export function Canvas() {
 
       // Apply acceleration from keys if any are pressed
       if (keysPressedRef.current.ArrowUp) {
-        velY = Math.max(velY + KEY_ACCELERATION, MAX_KEY_VELOCITY);
+        velY = Math.min(velY + KEY_ACCELERATION, MAX_KEY_VELOCITY);
         isActivelyKeyScrolling = true;
       }
       if (keysPressedRef.current.ArrowDown) {
-        velY = Math.min(velY - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
+        velY = Math.max(velY - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
         isActivelyKeyScrolling = true;
       }
       if (keysPressedRef.current.ArrowLeft) {
-        velX = Math.max(velX + KEY_ACCELERATION, MAX_KEY_VELOCITY);
+        velX = Math.min(velX + KEY_ACCELERATION, MAX_KEY_VELOCITY);
         isActivelyKeyScrolling = true;
       }
       if (keysPressedRef.current.ArrowRight) {
-        velX = Math.min(velX - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
+        velX = Math.max(velX - KEY_ACCELERATION, -MAX_KEY_VELOCITY);
         isActivelyKeyScrolling = true;
       }
 

@@ -9,7 +9,6 @@ export const clampPosition = (
   defaultPixelSize: number
 ): Coordinates => {
   if (
-    !window ||
     !pixelsData ||
     pixelsData.length === 0 ||
     !pixelsData[0] ||
