@@ -909,6 +909,8 @@ export function Canvas() {
             setSelectedPixel(null); // Tapped outside grid, deselect
           }
         }
+
+        setSelectedPixelUser(null);
       }
 
       // Reset touch state

@@ -22,7 +22,7 @@ import {
 } from "@/constants/canvas";
 import { useSession, useUser } from "@clerk/nextjs";
 import { createClient } from "@supabase/supabase-js";
-import { placePixelAction } from "@/actions"; // Import the server action
+import { placePixelAction } from "@/actions/canvasActions";
 import { clampPosition } from "@/utils/canvas";
 
 const defaultPixel: Pixel = {
@@ -38,7 +38,7 @@ const CanvasContext = createContext<CanvasContextState | undefined>(undefined);
 
 export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const { user, isSignedIn } = useUser();
-  const { session } = useSession();
+  const { session, isLoaded: isSessionLoaded } = useSession(); // Get isLoaded
 
   const [pixels, setPixels] = useState<Pixel[][]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,6 +134,13 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
 
   // Subscribe to real-time changes
   useEffect(() => {
+    // Wait until the session is loaded (even if there's no active session for an unauthenticated user)
+    // and the client object is available.
+    if (!isSessionLoaded || !client) {
+      return;
+    }
+
+    console.log("Attempting to subscribe to real-time updates...");
     const channel = client
       .channel("realtime-pixels-updates") // Unique channel name
       .on(
@@ -183,13 +190,28 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status, err) => {
+        if (status === "SUBSCRIBED") {
+          console.log("Successfully subscribed to realtime-pixels-updates!");
+        } else if (status === "CHANNEL_ERROR") {
+          console.error("Subscription failed: CHANNEL_ERROR", err);
+        } else if (status === "TIMED_OUT") {
+          console.error("Subscription failed: TIMED_OUT");
+        } else if (status === "CLOSED") {
+          console.log("Subscription explicitly closed.");
+        } else {
+          console.log("Subscription status:", status);
+        }
+      });
 
     // Cleanup function to remove the channel subscription when the component unmounts
     return () => {
-      client.removeChannel(channel);
+      console.log("Unsubscribing from real-time updates and removing channel.");
+      client.removeChannel(channel).catch((error) => {
+        console.error("Error removing Supabase channel:", error);
+      });
     };
-  }, [client]); // Added session to dependencies
+  }, [client, session, isSessionLoaded]); // Dependencies updated
 
   const setClampedPosition = useCallback(
     (
