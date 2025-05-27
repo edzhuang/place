@@ -19,4 +19,5 @@ You must be signed in to place pixels. There is a short cooldown period after pl
 - TypeScript
 - Supabase
 - Clerk
+- Tailwind CSS
 - quadratic/ui
