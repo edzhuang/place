@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import type { Pixel, Coordinates, CanvasContextState } from "@/types/canvas";
 import { PIXELS_TABLE } from "@/constants/canvas";
 import {
@@ -52,6 +52,9 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
   const [lastPlacedTimestamp, setLastPlacedTimestamp] = useState<number | null>(
     null
   );
+
+  // Ref to store the reset function from Canvas component
+  const resetAnimationsRef = useRef<(() => void) | null>(null);
 
   // Effect to load initial lastPlacedTimestamp from user metadata
   useEffect(() => {
@@ -233,11 +236,18 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     },
     [pixels, zoom] // Depends only on the stable setPosition from context
   );
-
   const adjustZoom = (
     multFactor: number,
-    anchor?: { x: number; y: number }
+    anchor?: { x: number; y: number },
+    onZoomStart?: () => void
   ) => {
+    // Reset velocity and animations before adjusting zoom
+    if (onZoomStart) {
+      onZoomStart();
+    } else if (resetAnimationsRef.current) {
+      resetAnimationsRef.current();
+    }
+
     const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * multFactor));
     setZoom(newZoom);
 
@@ -252,6 +262,10 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     const newPositionY = anchor.y - (anchor.y - position.y) * (newZoom / zoom);
     setClampedPosition({ x: newPositionX, y: newPositionY }, newZoom);
   };
+
+  const setResetAnimationsCallback = useCallback((callback: () => void) => {
+    resetAnimationsRef.current = callback;
+  }, []);
 
   const placePixel = async () => {
     if (isLoading) {
@@ -288,7 +302,6 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
       }
     }
   };
-
   const contextValue = {
     isSignedIn,
     pixels,
@@ -310,6 +323,7 @@ export const CanvasProvider = ({ children }: { children: ReactNode }) => {
     placePixel,
     isLoading,
     lastPlacedTimestamp,
+    setResetAnimationsCallback,
   };
 
   return (

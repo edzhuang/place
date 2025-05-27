@@ -25,7 +25,11 @@ export interface CanvasContextState {
   selectedColor: Color;
   setSelectedColor: React.Dispatch<React.SetStateAction<Color>>;
   zoom: number;
-  adjustZoom: (multFactor: number, anchor?: Coordinates) => void;
+  adjustZoom: (
+    multFactor: number,
+    anchor?: Coordinates,
+    onZoomStart?: () => void
+  ) => void;
   position: Coordinates;
   setClampedPosition: React.Dispatch<React.SetStateAction<Coordinates>>;
   isDragging: boolean;
@@ -35,4 +39,5 @@ export interface CanvasContextState {
   placePixel: () => void;
   isLoading: boolean;
   lastPlacedTimestamp: number | null;
+  setResetAnimationsCallback: (callback: () => void) => void;
 }

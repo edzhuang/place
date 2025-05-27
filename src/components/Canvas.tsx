@@ -40,7 +40,6 @@ export function Canvas() {
   );
   const offscreenCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const animationFrameDrawRef = useRef<number | null>(null);
-
   const {
     pixels,
     hoveredPixel,
@@ -55,6 +54,7 @@ export function Canvas() {
     setIsDragging,
     dragStart,
     setDragStart,
+    setResetAnimationsCallback,
   } = useCanvas();
 
   // Refs for stable access to state/props in callbacks
@@ -81,6 +81,11 @@ export function Canvas() {
         false;
     });
   }, []);
+
+  // Register the reset function with the context
+  useEffect(() => {
+    setResetAnimationsCallback(stopAndResetAnimations);
+  }, [setResetAnimationsCallback, stopAndResetAnimations]);
 
   // Effect to update the off-screen canvas when pixel data changes
   useEffect(() => {
@@ -737,11 +742,10 @@ export function Canvas() {
 
     const rect = canvasRef.current?.getBoundingClientRect();
     if (!rect) return;
-
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    adjustZoom(multFactor, { x: mouseX, y: mouseY });
+    adjustZoom(multFactor, { x: mouseX, y: mouseY }, stopAndResetAnimations);
   };
 
   // NEW: Handle touch events for pinch-to-zoom and panning
@@ -811,7 +815,7 @@ export function Canvas() {
         const touchX = centerX - rect.left;
         const touchY = centerY - rect.top;
 
-        adjustZoom(scale, { x: touchX, y: touchY });
+        adjustZoom(scale, { x: touchX, y: touchY }, stopAndResetAnimations);
       }
 
       lastTouchDistanceRef.current = distance;
